@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).",
   "copyright": "© Mendix Technology BV 2022. All rights reserved.",
-  "author": "Stoneworx",
+  "author": "JL",
   "engines": {
     "node": ">=16"
   },
@@ -14,7 +14,7 @@
     "mendixHost": "http://localhost:8080",
     "developmentPort": 3000
   },
-  "packagePath": "stoneworx",
+  "packagePath": "joaodelopes",
   "scripts": {
     "start": "pluggable-widgets-tools start:server",
     "dev": "pluggable-widgets-tools start:web",
