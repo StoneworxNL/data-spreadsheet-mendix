@@ -3,7 +3,7 @@ import Spreadsheet from "x-data-spreadsheet";
 import * as XLSX from "xlsx";
 import { stox, xtos } from './xlsxspread.min.js';
 
-export function XSpreadsheet({ filedocument, editable, filecontent, exportaction }) {
+export function XSpreadsheet({ filedocument, editable }) {
     const el = useRef(null);
     const [availablefile, setFile] = useState(filedocument);
     const [isEditable, setIsEditable] = useState(editable); // State for editability

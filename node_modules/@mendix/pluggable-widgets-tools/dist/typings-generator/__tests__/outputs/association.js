@@ -1,0 +1,51 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.associationNativeOutput = exports.associationWebOutput = void 0;
+exports.associationWebOutput = `/**
+ * This file was generated from MyWidget.xml
+ * WARNING: All changes made to this file will be overwritten
+ * @author Mendix Widgets Framework Team
+ */
+import { CSSProperties } from "react";
+import { ListValue, ListAttributeValue, ReferenceValue, ReferenceSetValue } from "mendix";
+
+export interface MyWidgetContainerProps {
+    name: string;
+    class: string;
+    style?: CSSProperties;
+    tabIndex?: number;
+    reference: ReferenceValue;
+    referenceSet: ReferenceSetValue;
+    referenceOrSet: ReferenceValue | ReferenceSetValue;
+    optionsSource?: ListValue;
+    displayValue?: ListAttributeValue<string>;
+}
+
+export interface MyWidgetPreviewProps {
+    /**
+     * @deprecated Deprecated since version 9.18.0. Please use class property instead.
+     */
+    className: string;
+    class: string;
+    style: string;
+    styleObject?: CSSProperties;
+    readOnly: boolean;
+    renderMode: "design" | "xray" | "structure";
+    translate: (text: string) => string;
+    reference: string;
+    referenceSet: string;
+    referenceOrSet: string;
+    optionsSource: {} | { caption: string } | { type: string } | null;
+    displayValue: string;
+    referenceOnChange: {} | null;
+}
+`;
+exports.associationNativeOutput = `export interface MyWidgetProps<Style> {
+    name: string;
+    style: Style[];
+    reference: ReferenceValue;
+    referenceSet: ReferenceSetValue;
+    referenceOrSet: ReferenceValue | ReferenceSetValue;
+    optionsSource?: ListValue;
+    displayValue?: ListAttributeValue<string>;
+}`;

@@ -1,0 +1,63 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.containmentInputNative = exports.containmentInput = void 0;
+exports.containmentInput = `<?xml version="1.0" encoding="utf-8"?>
+<widget id="mendix.mywidget.MyWidget" needsEntityContext="true" offlineCapable="true" pluginWidget="true"
+        xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../xsd/widget.xsd">
+    <properties>
+        <propertyGroup caption="General">
+            <property key="content" type="widgets" required="true">
+                <caption>Content</caption>
+                <description>Sample text input</description>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Actions">
+            <property key="description" type="attribute">
+                <caption>Action</caption>
+                <description />
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>    
+            </property>
+            <property key="action" type="action">
+                <caption>Action</caption>
+                <description />
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="System Properties">
+            <!-- no "Label" system property -->
+            <systemProperty key="TabIndex"></systemProperty>
+        </propertyGroup>
+    </properties>
+</widget>`;
+exports.containmentInputNative = `<?xml version="1.0" encoding="utf-8"?>
+<widget id="mendix.mywidget.MyWidget" needsEntityContext="true" offlineCapable="true" pluginWidget="true" supportedPlatform="Native"
+        xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../xsd/widget.xsd">
+    <properties>
+         <propertyGroup caption="General">
+            <property key="content" type="widgets" required="true">
+                <caption>Content</caption>
+                <description>Sample text input</description>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Actions">
+            <property key="description" type="attribute">
+                <caption>Action</caption>
+                <description />
+                <attributeTypes>
+                    <attributeType name="String"/>
+                </attributeTypes>    
+            </property>
+            <property key="action" type="action">
+                <caption>Action</caption>
+                <description />
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="System Properties">
+            <!-- no "Label" system property -->
+            <systemProperty key="TabIndex"></systemProperty>
+        </propertyGroup>
+    </properties>
+</widget>`;

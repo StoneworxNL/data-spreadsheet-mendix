@@ -1,0 +1,95 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.datasourceNativeOutput = exports.datasourceWebOutput = void 0;
+exports.datasourceWebOutput = `/**
+ * This file was generated from MyWidget.xml
+ * WARNING: All changes made to this file will be overwritten
+ * @author Mendix Widgets Framework Team
+ */
+import { ComponentType, ReactNode } from "react";
+import { ActionValue, EditableValue, ListValue, ListActionValue, ListAttributeValue, ListExpressionValue, ListWidgetValue } from "mendix";
+import { Big } from "big.js";
+
+export interface DatasourcePropertiesType {
+    contentAttribute: ListWidgetValue;
+    markerAttribute: ListAttributeValue<string | boolean | Big>;
+    actionAttribute?: ListActionValue;
+    optionalDSAttribute?: ListAttributeValue<string | boolean | Big>;
+    optionalDSAction?: ListActionValue;
+    optionalDSTextTemplate?: ListExpressionValue<string>;
+    optionalDSExpression?: ListExpressionValue<Big>;
+    optionalContent?: ListWidgetValue;
+}
+
+export interface DatasourcePropertiesPreviewType {
+    contentAttribute: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
+    markerAttribute: string;
+    actionAttribute: {} | null;
+    optionalDSAttribute: string;
+    optionalDSAction: {} | null;
+    optionalDSTextTemplate: string;
+    optionalDSExpression: string;
+    optionalContent: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
+}
+
+export interface MyWidgetContainerProps {
+    name: string;
+    tabIndex?: number;
+    id: string;
+    contentSource: ListValue;
+    optionalSource?: ListValue;
+    content: ListWidgetValue;
+    markerDataAttribute: ListAttributeValue<string | boolean | Big>;
+    actionAttribute?: ListActionValue;
+    textTemplateAttribute: ListExpressionValue<string>;
+    expressionAttribute: ListExpressionValue<Big>;
+    optionalDSAttribute?: ListAttributeValue<string | boolean | Big>;
+    optionalDSAction?: ListActionValue;
+    optionalDSTextTemplate?: ListExpressionValue<string>;
+    optionalDSExpression?: ListExpressionValue<Big>;
+    optionalContent?: ListWidgetValue;
+    datasourceProperties: DatasourcePropertiesType[];
+    description: EditableValue<string>;
+    action?: ActionValue;
+}
+
+export interface MyWidgetPreviewProps {
+    readOnly: boolean;
+    renderMode: "design" | "xray" | "structure";
+    translate: (text: string) => string;
+    contentSource: {} | { caption: string } | { type: string } | null;
+    optionalSource: {} | { caption: string } | { type: string } | null;
+    content: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
+    markerDataAttribute: string;
+    actionAttribute: {} | null;
+    textTemplateAttribute: string;
+    expressionAttribute: string;
+    optionalDSAttribute: string;
+    optionalDSAction: {} | null;
+    optionalDSTextTemplate: string;
+    optionalDSExpression: string;
+    optionalContent: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
+    datasourceProperties: DatasourcePropertiesPreviewType[];
+    description: string;
+    action: {} | null;
+}
+`;
+exports.datasourceNativeOutput = `export interface DatasourcePropertiesType {
+    contentAttribute: ListWidgetValue;
+    markerAttribute: ListAttributeValue<string | boolean | Big>;
+    actionAttribute?: ListActionValue;
+}
+
+export interface MyWidgetProps<Style> {
+    name: string;
+    style: Style[];
+    contentSource: ListValue;
+    content: ListWidgetValue;
+    markerDataAttribute: ListAttributeValue<string | boolean | Big>;
+    actionAttribute?: ListActionValue;
+    textTemplateAttribute: ListExpressionValue<string>;
+    expressionAttribute: ListExpressionValue<Big>;
+    datasourceProperties: DatasourcePropertiesType[];
+    description: EditableValue<string>;
+    action?: ActionValue;
+}`;
