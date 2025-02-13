@@ -11,7 +11,7 @@ And that's it. You can now see and edit your excel file.
 3. Set it as editable (Yes/False). That's it.
 
 ## Demo project
-https://github.com/joaodelopes/xspreadsheet-demo
+https://github.com/joaodelopes/xspreadsheet/tree/main/demo
 
 ## Issues, suggestions and feature requests
 Known Issue: Performance when handling large files.
