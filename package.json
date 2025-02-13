@@ -1,0 +1,49 @@
+{
+  "name": "xspreadsheet",
+  "widgetName": "XSpreadsheet",
+  "version": "1.0.0",
+  "description": "A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).",
+  "copyright": "© Mendix Technology BV 2022. All rights reserved.",
+  "author": "Stoneworx",
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT",
+  "config": {
+    "projectPath": "../../",
+    "mendixHost": "http://localhost:8080",
+    "developmentPort": 3000
+  },
+  "packagePath": "stoneworx",
+  "scripts": {
+    "start": "pluggable-widgets-tools start:server",
+    "dev": "pluggable-widgets-tools start:web",
+    "build": "pluggable-widgets-tools build:web",
+    "lint": "pluggable-widgets-tools lint",
+    "lint:fix": "pluggable-widgets-tools lint:fix",
+    "prerelease": "npm run lint",
+    "release": "pluggable-widgets-tools release:web"
+  },
+  "devDependencies": {
+    "@mendix/pluggable-widgets-tools": "^10.7.1",
+    "@tailwindcss/postcss7-compat": "^2.2.17",
+    "autoprefixer": "^9.8.8",
+    "postcss": "^8.3.5",
+    "postcss-less": "^6.0.0",
+    "postcss-rtlcss": "^5.6.0",
+    "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17"
+  },
+  "dependencies": {
+    "classnames": "^2.2.6",
+    "x-data-spreadsheet": "^1.1.9",
+    "xlsx": "^0.18.5"
+  },
+  "resolutions": {
+    "react": "18.2.0",
+    "react-native": "0.72.7"
+  },
+  "overrides": {
+    "react": "18.2.0",
+    "react-native": "0.72.7"
+  }
+}

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget
+    id="stoneworx.xspreadsheet.XSpreadsheet"
+    pluginWidget="true"
+    needsEntityContext="true"
+    offlineCapable="true"
+    supportedPlatform="Web"
+    xmlns="http://www.mendix.com/widget/1.0/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd"
+>
+    <name>XSpreadsheet</name>
+    <description>A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).</description>
+    <icon />
+    <properties>
+        <propertyGroup caption="General">
+            <property key="sourcetype" type="enumeration" defaultValue="fileenum">
+                <caption>Data Source</caption>
+                <description />
+                <enumerationValues>
+                    <enumerationValue key="fileenum">File</enumerationValue>
+                    <enumerationValue key="urlenum">URL</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="filedocument" type="file" required="false">
+                <caption>Excel File</caption>
+                <description></description>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Export">
+            <property key="filecontent" type="attribute" required="false">
+                <caption>File Content</caption>
+                <description>Base64 string to store file content.</description>
+                <attributeTypes>
+                    <attributeType name="Binary"/>
+                </attributeTypes>
+            </property>
+            <property key="exportaction" type="action">
+                <caption>Save File</caption>
+                <description>Action to handle the file export.</description>
+            </property>
+            <property key="urlsource" type="expression" required="false">
+                <caption>URL</caption>
+                <description>The URL of the excel file</description>
+                <returnType type="String" />
+            </property>
+            <property key="editable" type="boolean" defaultValue="false">
+                <caption>Editable</caption>
+                <description />
+            </property>
+            <property key="widthUnit" type="enumeration" defaultValue="auto">
+                <caption>Width unit</caption>
+                <description />
+                <enumerationValues>
+                    <enumerationValue key="auto">Auto</enumerationValue>
+                    <enumerationValue key="pixels">Pixels</enumerationValue>
+                    <enumerationValue key="percentage">Percentage</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="width" type="integer" defaultValue="100">
+                <caption>Width</caption>
+                <description />
+            </property>
+            <property key="heightUnit" type="enumeration" defaultValue="auto">
+                <caption>Height unit</caption>
+                <description>Auto will keep the aspect ratio of the image</description>
+                <enumerationValues>
+                    <enumerationValue key="auto">Auto</enumerationValue>
+                    <enumerationValue key="pixels">Pixels</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="height" type="integer" defaultValue="100">
+                <caption>Height</caption>
+                <description />
+            </property>
+        </propertyGroup>
+    </properties>
+</widget>
