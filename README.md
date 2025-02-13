@@ -11,10 +11,13 @@ And that's it. You can now see and edit your excel file.
 3. Set it as editable (Yes/False). That's it.
 
 ## Demo project
-https://github.com/joaodelopes/xspreadsheet/tree/main/demo
+- Mendix app running on the cloud: https://x-spreadsheet-demo-sandbox.mxapps.io/index.html?profile=Responsive
+- Mendix .mpk: https://github.com/joaodelopes/xspreadsheet/tree/main/demo
 
 ## Issues, suggestions and feature requests
 Known Issue: Performance when handling large files.
 We are working in improving performance and adding features to make this widget more flexible for different purposes. Feel free to suggest us new features.
+
+![Xspreadsheet in a mendix application](https://imgur.com/jOy7vUR)
 
 
