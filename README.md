@@ -18,7 +18,11 @@ And that's it. You can now see and edit your excel file.
 Known Issue: Performance when handling large files.
 We are working in improving performance and adding features to make this widget more flexible for different purposes. Feel free to suggest us new features.
 
+## Screenshot (Mendix Studio Pro usage)
+
 ![Usage in Mendix Studio Pro](https://i.imgur.com/7Vu2V4v.png)
+
+## Screenshots (Demo: Mendix web application)
 
 ![Xspreadsheet in a mendix application](https://i.imgur.com/oAnNK6E.png)
 
