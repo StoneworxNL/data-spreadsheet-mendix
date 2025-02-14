@@ -28,6 +28,4 @@ We are working in improving performance and adding features to make this widget 
 
 ![Xspreadsheet in a mendix application](https://i.imgur.com/vLASJAE.png)
 
-![Xspreadsheet in a mendix application](https://i.imgur.com/jOy7vUR.png)
-
 
