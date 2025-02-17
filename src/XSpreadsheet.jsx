@@ -18,8 +18,8 @@ export function XSpreadsheet({ filedocument, editable }) {
 
                 const s = new Spreadsheet(el.current, {
                     view: {
-                        height: () => document.documentElement.clientHeight,
-                        width: () => document.documentElement.clientWidth
+                        height: () => document.documentElement.clientHeight - 50,
+                        width: () => document.documentElement.clientWidth - 50
                     },
                     // Initially set readOnly based on the prop
                     ...( !isEditable && { // Spread the conditional options
@@ -33,13 +33,6 @@ export function XSpreadsheet({ filedocument, editable }) {
                 // Load data with styles
                 const data = stox(workbook);
                 s.loadData(data);
-
-                s.change(data => {
-                    if (isEditable) { // Only save if editable
-                        save(data);
-                        console.log(s.validate());
-                    }
-                });
 
                 setSpreadsheet(s); // Save the spreadsheet instance to state
             };
