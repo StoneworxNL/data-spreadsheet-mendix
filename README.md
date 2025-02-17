@@ -10,11 +10,11 @@ And that's it. You can now see and edit your excel file.
 ## Usage
 1. Add a dataview that fetches the .xlsx file you wish to display/edit.
 2. Inside the dataview, add the x-spreadsheet widget.
-3. Set it as editable (Yes/False). That's it.
+3. Set it as editable (Yes) or Read-only (No). That's it.
 
 
 ## Demo project
-- [Mendix app running on the cloud](https://x-spreadsheet-demo-sandbox.mxapps.io/index.html?profile=Responsive)
+- [Mendix app running on the cloud](https://x-spreadsheet-demo-sandbox.mxapps.io/index.html)
 - [Mendix demo module (.mpk)](https://github.com/joaodelopes/xspreadsheet/tree/main/demo)
 
 
