@@ -1,7 +1,7 @@
 import { createElement, useRef, useEffect, useState } from "react";
 import Spreadsheet from "x-data-spreadsheet";
 import * as XLSX from "xlsx";
-import { stox, xtos } from './xlsxspread.min.js';
+import { stox, xtos } from "./xlsxspread.min.js";
 
 export function XSpreadsheet({ filedocument, editable }) {
     const el = useRef(null);
@@ -22,7 +22,8 @@ export function XSpreadsheet({ filedocument, editable }) {
                         width: () => document.documentElement.clientWidth - 50
                     },
                     // Initially set readOnly based on the prop
-                    ...( !isEditable && { // Spread the conditional options
+                    ...(!isEditable && {
+                        // Spread the conditional options
                         mode: "read",
                         showToolbar: false,
                         showGrid: false,
@@ -38,27 +39,54 @@ export function XSpreadsheet({ filedocument, editable }) {
             };
             fetchData();
         }
-    }, [availablefile, isEditable]); 
+    }, [availablefile, isEditable]);
 
     useEffect(() => {
+        if(!availablefile)
         setFile(filedocument);
         setIsEditable(editable); // Update editability when the prop changes
     }, [filedocument, editable]); // Add editable to the dependency array
 
     const handleDownload = () => {
         if (spreadsheet) {
+
             const new_wb = xtos(spreadsheet.getData());
-            XLSX.writeFileXLSX(new_wb, availablefile.value.name, {
-                bookSST: true, 
+            // Generate the file blob
+            const fileData = XLSX.write(new_wb, {
+                bookSST: true,
                 compression: true,
-                bookType: 'xlsx'
+                bookType: "xlsx",
+                type: "array"
             });
+
+            // Convert the ArrayBuffer to a Blob
+            const fileBlob = new Blob([fileData], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            // Create a URL object
+            const urlObj = new URL(availablefile.value.uri);
+            // Use URLSearchParams to get the query parameters
+            const params = new URLSearchParams(urlObj.search);
+            // Get the 'guid' parameter
+            const guid = params.get('guid');
+
+            mx.data.saveDocument(guid, availablefile.value.name,
+                { },    
+                fileBlob,
+                function () {
+                    // success
+                },
+                function (e) {
+                    console.error(e);
+                }
+            );
         }
     };
 
     return (
         <div>
-            <button className="btn mx-button btn-default spacing-outer-bottom-medium" onClick={handleDownload}>Download</button>
+            <button className="btn mx-button btn-default spacing-outer-bottom-medium" onClick={handleDownload}>
+                Save
+            </button>
             <div id="gridctr" ref={el} />
         </div>
     );
