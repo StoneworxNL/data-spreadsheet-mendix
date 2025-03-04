@@ -10,6 +10,8 @@ export function XSpreadsheet({ filedocument, editable }) {
     const [spreadsheet, setSpreadsheet] = useState(null); // State to hold the spreadsheet instance
 
     useEffect(() => {
+        if (spreadsheet) // We only want to load the spreadsheet once.
+            return;
         if (availablefile && availablefile.status === "available" && availablefile.value.uri) {
             const fetchData = async () => {
                 const response = await fetch(availablefile.value.uri);
@@ -42,7 +44,6 @@ export function XSpreadsheet({ filedocument, editable }) {
     }, [availablefile, isEditable]);
 
     useEffect(() => {
-        if(!availablefile)
         setFile(filedocument);
         setIsEditable(editable); // Update editability when the prop changes
     }, [filedocument, editable]); // Add editable to the dependency array
@@ -84,9 +85,11 @@ export function XSpreadsheet({ filedocument, editable }) {
 
     return (
         <div>
-            <button className="btn mx-button btn-default spacing-outer-bottom-medium" onClick={handleDownload}>
-                Save
-            </button>
+            {isEditable && (
+                <button className="btn mx-button btn-default spacing-outer-bottom-medium" onClick={handleDownload}>
+                    Save
+                </button>
+            )}
             <div id="gridctr" ref={el} />
         </div>
     );
