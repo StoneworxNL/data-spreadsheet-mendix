@@ -4,7 +4,7 @@ import * as XLSX from "xlsx-js-style";
 import { stox } from "../xlsxspread.min.js";
 import { SaveSpreadsheet } from "./SaveSpreadsheet.jsx";
 
-export function MendixSpreadsheet({ fileDocument, editable }) {
+export function MendixSpreadsheet({ fileDocument, editable, bookSST, compression, bookType, type, cellStyles }) {
     const el = useRef(null);
     const [availablefile, setFile] = useState(fileDocument);
     const [spreadsheet, setSpreadsheet] = useState(null); // State to hold the spreadsheet instance
@@ -53,6 +53,11 @@ export function MendixSpreadsheet({ fileDocument, editable }) {
                 spreadsheet={spreadsheet}
                 editable={editable}
                 file={availablefile}
+                bookSST={bookSST}
+                compression={compression}
+                bookType={bookType} 
+                type={type} 
+                cellStyles={cellStyles}
             />
             <div id="gridctr" ref={el} />
         </div>

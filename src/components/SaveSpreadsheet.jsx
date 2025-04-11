@@ -2,7 +2,7 @@ import { createElement } from "react";
 import * as XLSX from "xlsx-js-style";
 import { xtos } from "../xlsxspread.min.js";
 
-export function SaveSpreadsheet({ spreadsheet, editable, file }) {
+export function SaveSpreadsheet({ spreadsheet, editable, file, bookSST, compression, bookType, type, cellStyles }) {
 
     const handleDownload = () => {
 
@@ -10,13 +10,14 @@ export function SaveSpreadsheet({ spreadsheet, editable, file }) {
 
             const new_wb = xtos(spreadsheet.getData());
 
+            // https://docs.sheetjs.com/docs/api/write-options/
             // Generate the file blob
             const fileData = XLSX.write(new_wb, {
-                bookSST: true,
-                compression: true,
-                bookType: "xlsx",
-                type: "array",
-                cellStyles: true
+                bookSST: bookSST,
+                compression: compression,
+                bookType: bookType, //"xlsx",
+                type: type, //"array",
+                cellStyles: cellStyles
             });
 
             XLSX.writeFile(new_wb, file.value.name);

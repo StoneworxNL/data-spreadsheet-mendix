@@ -23,25 +23,46 @@
                 <description>Vs. View-only.</description>
             </property>
         </propertyGroup>
-        <propertyGroup caption="Save Configurations">
+        <propertyGroup caption="Export">
             <property key="afterSaveAction" type="action">
                 <caption>After Save Action</caption>
                 <description>To perform actions after saving the file: eg. show success message.</description>
             </property>
             <property key="bookSST" type="boolean" defaultValue="false">
                 <caption>Book SST</caption>
-                <description>Generate Shared String Table. Is slower and more memory intensive, but has better compatibility with older versions of iOS Numbers</description>
+                <description>Generate Shared String Table. Is slower and more memory intensive, but has better compatibility with older versions of iOS Numbers.</description>
             </property>
             <property key="compression" type="boolean" defaultValue="true">
                 <caption>Compression</caption>
-                <description>Use ZIP compression for ZIP-based formats.</description>
+                <description>Use ZIP compression for ZIP-based formats (XLSX, XLSM, XLSB, NUMBERS).</description>
             </property>
-            <property key="bookTypeEnum" type="enumeration" defaultValue="XLSX">
+            <property key="bookTypeEnum" type="enumeration" defaultValue="xlsx">
                 <caption>Book Type</caption>
                 <description>Type of Workbook. File format of the exported file.</description>
                 <enumerationValues>
-                    <enumerationValue key="XLSX">XLSX</enumerationValue>
+                    <enumerationValue key="xlsx">xlsx</enumerationValue>
+                    <enumerationValue key="xlsm">xlsm</enumerationValue>
+                    <enumerationValue key="xlsb">xlsb</enumerationValue>
+                    <enumerationValue key="biff8">xls</enumerationValue>
+                    <enumerationValue key="numbers">numbers</enumerationValue>
+                    <enumerationValue key="csv">csv</enumerationValue>
+                    <enumerationValue key="txt">txt</enumerationValue>
+                    <enumerationValue key="html">html</enumerationValue>
                 </enumerationValues>
+            </property>
+            <property key="typeEnum" type="enumeration" defaultValue="array">
+                <caption>Type</caption>
+                <description>Specifies the JS form of the output.</description>
+                <enumerationValues>
+                    <enumerationValue key="array">Array</enumerationValue>
+                    <enumerationValue key="base64">Base 64</enumerationValue>
+                    <enumerationValue key="binary">Binary</enumerationValue>
+                    <enumerationValue key="string">String</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="cellStyles" type="boolean" defaultValue="false">
+                <caption>Cell Styles</caption>
+                <description>Save style/theme info.</description>
             </property>
         </propertyGroup>
     </properties>
