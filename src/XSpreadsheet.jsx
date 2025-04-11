@@ -1,9 +1,9 @@
 import { createElement } from "react";
 import { MendixSpreadsheet } from "./components/Spreadsheet";
 
-export function XSpreadsheet({ filedocument, editable }) {
+export function XSpreadsheet({ fileDocument, editable }) {
     return <MendixSpreadsheet
-        filedocument={filedocument}
+        fileDocument={fileDocument}
         editable={editable}
         />
 }

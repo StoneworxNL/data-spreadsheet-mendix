@@ -1,12 +1,12 @@
 import { createElement, useRef, useEffect, useState } from "react";
 import Spreadsheet from "x-data-spreadsheet";
-import * as XLSX from "xlsx";
-import { stox, xtos } from "./xlsxspread.min.js";
+import * as XLSX from "xlsx-js-style";
+import { stox } from "../xlsxspread.min.js";
 import { SaveSpreadsheet } from "./SaveSpreadsheet.jsx";
 
-export function MendixSpreadsheet({ filedocument, editable }) {
+export function MendixSpreadsheet({ fileDocument, editable }) {
     const el = useRef(null);
-    const [availablefile, setFile] = useState(filedocument);
+    const [availablefile, setFile] = useState(fileDocument);
     const [spreadsheet, setSpreadsheet] = useState(null); // State to hold the spreadsheet instance
 
     useEffect(() => {
@@ -44,8 +44,8 @@ export function MendixSpreadsheet({ filedocument, editable }) {
     }, [availablefile]);
 
     useEffect(() => {
-        setFile(filedocument);
-    }, [filedocument]); // Add editable to the dependency array
+        setFile(fileDocument);
+    }, [fileDocument]); // Add editable to the dependency array
 
     return (
         <div>

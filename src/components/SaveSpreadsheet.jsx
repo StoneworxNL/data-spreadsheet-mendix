@@ -1,7 +1,6 @@
-import { createElement, useRef, useEffect, useState } from "react";
-import Spreadsheet from "x-data-spreadsheet";
-import * as XLSX from "xlsx";
-import { stox, xtos } from "./xlsxspread.min.js";
+import { createElement } from "react";
+import * as XLSX from "xlsx-js-style";
+import { xtos } from "../xlsxspread.min.js";
 
 export function SaveSpreadsheet({ spreadsheet, editable, file }) {
 
@@ -16,8 +15,11 @@ export function SaveSpreadsheet({ spreadsheet, editable, file }) {
                 bookSST: true,
                 compression: true,
                 bookType: "xlsx",
-                type: "array"
+                type: "array",
+                cellStyles: true
             });
+
+            XLSX.writeFile(new_wb, file.value.name);
 
             // Convert the ArrayBuffer to a Blob
             const fileBlob = new Blob([fileData], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });

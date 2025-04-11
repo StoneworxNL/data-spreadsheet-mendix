@@ -14,13 +14,34 @@
     <icon />
     <properties>
         <propertyGroup caption="General">
-            <property key="filedocument" type="file" required="false">
-                <caption>Excel/xlsx file</caption>
-                <description></description>
+            <property key="fileDocument" type="file" required="false">
+                <caption>Excel/XLSX File</caption>
+                <description>File to load and (if editable), save.</description>
             </property>
             <property key="editable" type="boolean" defaultValue="false">
-                <caption>Editable (vs. view-only)</caption>
-                <description />
+                <caption>Editable</caption>
+                <description>Vs. View-only.</description>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Save Configurations">
+            <property key="afterSaveAction" type="action">
+                <caption>After Save Action</caption>
+                <description>To perform actions after saving the file: eg. show success message.</description>
+            </property>
+            <property key="bookSST" type="boolean" defaultValue="false">
+                <caption>Book SST</caption>
+                <description>Generate Shared String Table. Is slower and more memory intensive, but has better compatibility with older versions of iOS Numbers</description>
+            </property>
+            <property key="compression" type="boolean" defaultValue="true">
+                <caption>Compression</caption>
+                <description>Use ZIP compression for ZIP-based formats.</description>
+            </property>
+            <property key="bookTypeEnum" type="enumeration" defaultValue="XLSX">
+                <caption>Book Type</caption>
+                <description>Type of Workbook. File format of the exported file.</description>
+                <enumerationValues>
+                    <enumerationValue key="XLSX">XLSX</enumerationValue>
+                </enumerationValues>
             </property>
         </propertyGroup>
     </properties>
