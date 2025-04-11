@@ -22,15 +22,27 @@
                 <caption>Editable</caption>
                 <description>Vs. View-only.</description>
             </property>
+            <property key="isShowSave" type="boolean" defaultValue="true">
+                <caption>Show Save Button</caption>
+                <description>This allows to save the file on the same file provided in the General tab.</description>
+            </property>
+            <property key="isShowDownload" type="boolean" defaultValue="false">
+                <caption>Show Download Button</caption>
+                <description></description>
+            </property>
+            <property key="widthOffset" type="integer" defaultValue="50">
+                <caption>Width Offset (px)</caption>
+                <description>The spreadsheet will occupy the client width. However, one might need to take the theme/template padding into consideration. In the case of Atlas, it has a padding of 24px on each side.</description>
+            </property>
         </propertyGroup>
-        <propertyGroup caption="Export">
+        <propertyGroup caption="Export Options">
             <property key="afterSaveAction" type="action">
                 <caption>After Save Action</caption>
                 <description>To perform actions after saving the file: eg. show success message.</description>
             </property>
             <property key="bookSST" type="boolean" defaultValue="false">
                 <caption>Book SST</caption>
-                <description>Generate Shared String Table. Is slower and more memory intensive, but has better compatibility with older versions of iOS Numbers</description>
+                <description>Generate Shared String Table. Is slower and more memory intensive, but has better compatibility with older versions of iOS Numbers.</description>
             </property>
             <property key="compression" type="boolean" defaultValue="true">
                 <caption>Compression</caption>
@@ -60,9 +72,9 @@
                     <enumerationValue key="string">String</enumerationValue>
                 </enumerationValues>
             </property>
-            <property key="cellStyles" type="boolean" defaultValue="true">
+            <property key="cellStyles" type="boolean" defaultValue="false">
                 <caption>Cell Styles</caption>
-                <description>Use ZIP compression for ZIP-based formats.</description>
+                <description>Save style/theme info.</description>
             </property>
         </propertyGroup>
     </properties>

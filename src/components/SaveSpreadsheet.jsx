@@ -2,12 +2,17 @@ import { createElement } from "react";
 import * as XLSX from "xlsx-js-style";
 import { xtos } from "../xlsxspread.min.js";
 
-export function SaveSpreadsheet({ spreadsheet, editable, file, bookSST, compression, bookType, type, cellStyles }) {
+export function SaveSpreadsheet({ spreadsheet, file, bookSST, compression, bookType, type, cellStyles, isShowSave, isShowDownload, afterSaveAction }) {
 
     const handleDownload = () => {
-
         if (spreadsheet) {
+            const new_wb = xtos(spreadsheet.getData());
+            XLSX.writeFile(new_wb, file.value.name);
+        }
+    }
 
+    const handleSave = () => {
+        if (spreadsheet) {
             const new_wb = xtos(spreadsheet.getData());
 
             // https://docs.sheetjs.com/docs/api/write-options/
@@ -20,11 +25,8 @@ export function SaveSpreadsheet({ spreadsheet, editable, file, bookSST, compress
                 cellStyles: cellStyles
             });
 
-            XLSX.writeFile(new_wb, file.value.name);
-
             // Convert the ArrayBuffer to a Blob
             const fileBlob = new Blob([fileData], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-
             // Create a URL object
             const urlObj = new URL(file.value.uri);
             // Use URLSearchParams to get the query parameters
@@ -37,7 +39,14 @@ export function SaveSpreadsheet({ spreadsheet, editable, file, bookSST, compress
                 { },    
                 fileBlob,
                 function () {
-                    // success
+                    if(afterSaveAction && !afterSaveAction.isExecuting)   {
+                        if(afterSaveAction.canExecute)   {
+                            afterSaveAction.execute();
+                        }
+                        else {
+                            console.log('After save action is executing.');
+                        }
+                    }
                 },
                 function (e) {
                     console.error(e);
@@ -46,13 +55,22 @@ export function SaveSpreadsheet({ spreadsheet, editable, file, bookSST, compress
         }
     };
 
+    const btnClassNames = "btn mx-button btn-default spacing-outer-bottom-medium";
+
     return (
         <div>
-            {editable && (
+            {isShowSave && (
                 <button
-                    className="btn mx-button btn-default spacing-outer-bottom-medium" 
-                    onClick={handleDownload}>
+                    className={btnClassNames}
+                    onClick={handleSave}>
                 Save
+                </button>
+            )}
+            {isShowDownload && (
+                <button
+                    className={btnClassNames}
+                    onClick={handleDownload}>
+                Download
                 </button>
             )}
         </div>
