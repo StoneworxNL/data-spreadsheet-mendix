@@ -24,7 +24,7 @@
             </property>
             <property key="isShowSave" type="boolean" defaultValue="true">
                 <caption>Show Save Button</caption>
-                <description>This allows to save the file on the same file provided in the General tab.</description>
+                <description>This allows to save the file on the same file provided in the General tab. Only applicable if spreadsheet was set as Editable.</description>
             </property>
             <property key="isShowDownload" type="boolean" defaultValue="false">
                 <caption>Show Download Button</caption>
@@ -32,7 +32,7 @@
             </property>
             <property key="widthOffset" type="integer" defaultValue="50">
                 <caption>Width Offset (px)</caption>
-                <description>The spreadsheet will occupy the client width. However, one might need to take the theme/template padding into consideration. In the case of Atlas, it has a padding of 24px on each side.</description>
+                <description>The spreadsheet will fill the client's width. However, one might need to take the theme/template side-padding into consideration to avoid having two vertical scrollbars. In the case of Atlas, it has a padding of 24px on each side.</description>
             </property>
         </propertyGroup>
         <propertyGroup caption="Export Options">
