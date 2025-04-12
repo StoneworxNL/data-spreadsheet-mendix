@@ -25,7 +25,7 @@ View and edit your excel files. Pluggable widget based on the [x-data-spreadshee
     *   #gridctr
 
 
-### Light
+<!-- ### Light
 ![Light Mode](https://github.com/joaodelopes/block-note-mendix/blob/main/images/lightmodedemo.png)
 ![Light Mode (full-page)](https://github.com/joaodelopes/block-note-mendix/blob/main/images/fullscreendemo.png)
 
@@ -33,7 +33,7 @@ View and edit your excel files. Pluggable widget based on the [x-data-spreadshee
 ![Dark Mode](https://github.com/joaodelopes/block-note-mendix/blob/main/images/darkmodedemo.png)
 
 ### View-only
-![View-only Mode](https://github.com/joaodelopes/block-note-mendix/blob/main/images/viewmodedemo.png)
+![View-only Mode](https://github.com/joaodelopes/block-note-mendix/blob/main/images/viewmodedemo.png) -->
 
 ## Usage
 1. Add a dataview that fetches the .xlsx file you wish to display/edit.
@@ -41,9 +41,11 @@ View and edit your excel files. Pluggable widget based on the [x-data-spreadshee
 3. Custumize it. Make it editable/view-only; Decide if you want to show the Save/Download button. Define a width margin if needed.
 4. In case you want to export (save/download), define the export options.
 
-![Usage in Mendix Studio Pro (Data View)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro0.png)
-![Usage in Mendix Studio Pro (General)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro1.png)
-![Usage in Mendix Studio Pro (Export Configurations)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro2.png)
+### General Settings
+![Usage in Mendix Studio Pro (General)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro0.png)
+
+### Export Settings
+![Usage in Mendix Studio Pro (Export Settings)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro1.png)
 
 
 ## Demo project
