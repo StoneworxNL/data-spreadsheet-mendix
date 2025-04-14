@@ -2,7 +2,7 @@ import { createElement, useRef, useEffect, useState } from "react";
 import Spreadsheet from "x-data-spreadsheet";
 import * as XLSX from "xlsx-js-style";
 import { stox } from "../xlsxspread.min.js";
-import { SaveSpreadsheet } from "./SaveSpreadsheet.jsx";
+import { CustomExportToolbar } from "./CustomExportToolbar.jsx";
 
 export function MendixSpreadsheet({ fileDocument, editable, bookSST, compression, bookType, type, cellStyles, isShowSave, isShowDownload, afterSaveAction, widthOffset }) {
     const el = useRef(null);
@@ -49,7 +49,7 @@ export function MendixSpreadsheet({ fileDocument, editable, bookSST, compression
 
     return (
         <div>
-            <SaveSpreadsheet 
+            <CustomExportToolbar 
                 spreadsheet={spreadsheet}
                 file={availablefile}
                 bookSST={bookSST}

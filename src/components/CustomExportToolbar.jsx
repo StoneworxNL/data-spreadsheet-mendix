@@ -2,7 +2,7 @@ import { createElement } from "react";
 import * as XLSX from "xlsx-js-style";
 import { xtos } from "../xlsxspread.min.js";
 
-export function SaveSpreadsheet({ spreadsheet, file, bookSST, compression, bookType, type, cellStyles, isShowSave, isShowDownload, afterSaveAction }) {
+export function CustomExportToolbar({ spreadsheet, file, bookSST, compression, bookType, type, cellStyles, isShowSave, isShowDownload, afterSaveAction }) {
 
     const handleDownload = () => {
         if (spreadsheet) {
