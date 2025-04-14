@@ -58,7 +58,7 @@ View and edit your excel files. Pluggable widget based on the [x-data-spreadshee
 
 *   Performance is a problem when handling large files. In part, this is a limitation of the SheetJs free version. The Pro version might be a solution.
 
-*   Also, there's an odd behaviour with the spreadsheet's horizontal scrollbar when using Mozilla Firefox. We will will try to fix this.
+*   Strange behaviour with the spreadsheet's horizontal scrollbar when using Mozilla Firefox. This seems unrelated to this widget's logic as per this [Stack Overflow post](https://superuser.com/questions/1720362/firefox-scroll-bar-disappearing).
 
 *   There's also a library limitation with importing spreadsheets' styles. Currently it allows to export spreadsheets and its styles, but not import the styles. So, your file will always show unstyled. Since this depends on the library this widget uses, solving it might not be easy / coming soon.
 
