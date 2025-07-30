@@ -60,9 +60,9 @@ View and edit your excel files. Pluggable widget based on the [x-data-spreadshee
 
 *   Strange behaviour with the spreadsheet's horizontal scrollbar when using Mozilla Firefox. This seems unrelated to this widget's logic as per this [Stack Overflow post](https://superuser.com/questions/1720362/firefox-scroll-bar-disappearing).
 
-*   There's also a library limitation with importing spreadsheets' styles. Currently it allows to export spreadsheets and its styles, but not import the styles. So, your file will always show unstyled. Since this depends on the library this widget uses, solving it might not be easy / coming soon.
+*   Currently, spreadsheet styling can be exported but not imported. So, your file will always show unstyled. Library limitation with importing spreadsheets' styles, solving it is not easy / coming soon.
 
-*   We are working in improving performance and adding features to make this widget more flexible for different purposes. Feel free to suggest us new features.
+*   We are working in improving performance and adding features to make this widget more flexible for different purposes. Feel free to suggest us new features. If you notice any issue, also let us know.
 
 
 ## About Stoneworx
