@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import * as XLSX from "xlsx-js-style";
+import * as XLSX from "xlsx";
 import { xtos } from "../external/xlsxspread.js";
 
 export function CustomExportToolbar({

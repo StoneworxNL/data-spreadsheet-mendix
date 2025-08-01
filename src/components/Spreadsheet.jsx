@@ -1,7 +1,8 @@
 import { createElement, useRef, useEffect, useState } from "react";
 import Spreadsheet from "x-data-spreadsheet";
-import * as XLSX from "xlsx-js-style";
+import * as XLSX from "xlsx";
 import { stox } from "../external/xlsxspread.js";
+("../external/xlsxspread.js");
 import { CustomExportToolbar } from "./CustomExportToolbar.jsx";
 
 export function MendixSpreadsheet({
@@ -18,11 +19,10 @@ export function MendixSpreadsheet({
     widthOffset
 }) {
     const el = useRef(null);
-    const [availablefile, setFile] = useState(fileDocument);
     const [spreadsheet, setSpreadsheet] = useState(null); // State to hold the spreadsheet instance
 
     const buildSpreadSheet = async () => {
-        const response = await fetch(availablefile.value.uri);
+        const response = await fetch(fileDocument.value.uri);
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: "array" });
 
@@ -49,21 +49,18 @@ export function MendixSpreadsheet({
     };
 
     useEffect(() => {
-        setFile(fileDocument);
+        if (spreadsheet) return;
+        if (fileDocument && fileDocument.status === "available" && fileDocument.value.uri) {
+            // setFile(fileDocument);
+            buildSpreadSheet();
+        }
     }, [fileDocument]); // Add editable to the dependency array
-
-    useEffect(() => {
-        if (spreadsheet)
-            // We only want to load the spreadsheet once.
-            return;
-        if (availablefile && availablefile.status === "available" && availablefile.value.uri) buildSpreadSheet();
-    }, [availablefile]);
 
     return (
         <div>
             <CustomExportToolbar
                 spreadsheet={spreadsheet}
-                file={availablefile}
+                file={fileDocument}
                 bookSST={bookSST}
                 compression={compression}
                 bookType={bookType}

@@ -1,3 +1,5 @@
+import * as XLSX from "xlsx";
+
 /*! xlsxspread.js (C) SheetJS LLC -- https://sheetjs.com/ */
 /* eslint-env browser */
 /*global XLSX */
@@ -12,7 +14,7 @@
  *
  * @returns {Object[]} An x-spreadsheet data
  */
-function stox(wb) {
+export function stox(wb) {
     var out = [];
     wb.SheetNames.forEach(function (name) {
         var o = { name: name, rows: {} };
@@ -70,7 +72,7 @@ function stox(wb) {
  *
  * @returns {Object} A SheetJS workbook object
  */
-function xtos(sdata) {
+export function xtos(sdata) {
     var out = XLSX.utils.book_new();
     sdata.forEach(function (xws) {
         var ws = {};
