@@ -2,7 +2,7 @@
 
 A Mendix widget to view and edit excel files / spreadsheets based on https://github.com/myliang/x-spreadsheet.
 
-<img alt="Mendix Pluggable Widget Data Spreadsheet Logo" src="https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/logo.jpeg" width="65px"/>
+<img alt="Mendix Pluggable Widget Data Spreadsheet Logo" src="https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/images/logo.jpeg" width="65px"/>
 
 ## Features
 
@@ -38,16 +38,16 @@ data directly from your Mendix web app. Current features include:
 
 ### General Settings
 
-![Usage in Mendix Studio Pro (General)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro0.png)
+![Usage in Mendix Studio Pro (General)](https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/images/studiopro0.png)
 
 ### Export Settings
 
-![Usage in Mendix Studio Pro (Export Settings)](https://github.com/joaodelopes/data-spreadsheet-mendix/blob/main/images/studiopro1.png)
+![Usage in Mendix Studio Pro (Export Settings)](https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/images/studiopro1.png)
 
 ## Demo project
 
 -   [Mendix app running on the cloud](https://x-spreadsheet-demo-sandbox.mxapps.io/index.html)
--   [Mendix demo module (.mpk)](https://github.com/joaodelopes/xspreadsheet/tree/main/demo)
+-   [Mendix demo module (.mpk)](https://github.com/StoneworxNL/xspreadsheet/tree/main/demo)
 -   [Marketplace widget](https://marketplace.mendix.com/link/component/237438)
 <!-- - [Mendix demo scss (.scss)](https://github.com/joaodelopes/block-note-mendix/blob/main/demo/demo.scss) -->
 
