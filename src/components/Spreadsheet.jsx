@@ -2,8 +2,8 @@ import { createElement, useRef, useEffect, useState } from "react";
 import Spreadsheet from "x-data-spreadsheet";
 import * as XLSX from "xlsx";
 import { stox } from "../external/xlsxspread.js";
-("../external/xlsxspread.js");
 import { CustomExportToolbar } from "./CustomExportToolbar.jsx";
+import "../ui/XSpreadsheet.css";
 
 export function MendixSpreadsheet({
     fileDocument,
@@ -70,7 +70,7 @@ export function MendixSpreadsheet({
                 isShowDownload={isShowDownload}
                 afterSaveAction={afterSaveAction}
             />
-            <div id="gridctr" ref={el} />
+            <div id="gridctr" ref={el} className={editable ? "" : "readonly"} />
         </div>
     );
 }
