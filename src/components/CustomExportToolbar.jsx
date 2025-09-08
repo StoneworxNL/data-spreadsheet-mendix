@@ -22,50 +22,49 @@ export function CustomExportToolbar({
     };
 
     const handleSave = () => {
-        // if (spreadsheet) {
-        //     const new_wb = xtos(spreadsheet.getData());
+        if (spreadsheet) {
+            const new_wb = xtos(spreadsheet.getData());
 
-        //     // https://docs.sheetjs.com/docs/api/write-options/
-        //     // Generate the file blob
-        //     const fileData = XLSX.write(new_wb, {
-        //         bookSST: bookSST,
-        //         compression: compression,
-        //         bookType: bookType, //"xlsx",
-        //         type: type, //"array",
-        //         cellStyles: cellStyles
-        //     });
+            // https://docs.sheetjs.com/docs/api/write-options/
+            // Generate the file blob
+            const fileData = XLSX.write(new_wb, {
+                bookSST: bookSST,
+                compression: compression,
+                bookType: bookType, //"xlsx",
+                type: type, //"array",
+                cellStyles: cellStyles
+            });
 
-        //     // Convert the ArrayBuffer to a Blob
-        //     const fileBlob = new Blob([fileData], {
-        //         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        //     });
-        //     // Create a URL object
-        //     const urlObj = new URL(file.value.uri);
-        //     // Use URLSearchParams to get the query parameters
-        //     const params = new URLSearchParams(urlObj.search);
-        //     // Get the 'guid' parameter
-        //     const guid = params.get("guid");
+            // Convert the ArrayBuffer to a Blob
+            const fileBlob = new Blob([fileData], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            });
+            // Create a URL object
+            const urlObj = new URL(file.value.uri);
+            // Use URLSearchParams to get the query parameters
+            const params = new URLSearchParams(urlObj.search);
+            // Get the 'guid' parameter
+            const guid = params.get("guid");
 
-        //     mx.data.saveDocument(
-        //         guid,
-        //         file.value.name,
-        //         {},
-        //         fileBlob,
-        //         function () {
-        //             if (afterSaveAction && !afterSaveAction.isExecuting) {
-        //                 if (afterSaveAction.canExecute) {
-        //                     afterSaveAction.execute();
-        //                 } else {
-        //                     console.log("After save action is executing.");
-        //                 }
-        //             }
-        //         },
-        //         function (e) {
-        //             console.error(e);
-        //         }
-        //     );
-        // }
-        alert("Demo mode: Saving disabled.");
+            mx.data.saveDocument(
+                guid,
+                file.value.name,
+                {},
+                fileBlob,
+                function () {
+                    if (afterSaveAction && !afterSaveAction.isExecuting) {
+                        if (afterSaveAction.canExecute) {
+                            afterSaveAction.execute();
+                        } else {
+                            console.log("After save action is executing.");
+                        }
+                    }
+                },
+                function (e) {
+                    console.error(e);
+                }
+            );
+        }
     };
 
     const btnClassNames = "btn mx-button btn-default spacing-outer-bottom-medium";
