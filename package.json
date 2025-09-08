@@ -1,7 +1,7 @@
 {
     "name": "xspreadsheet",
     "widgetName": "XSpreadsheet",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).",
     "copyright": "© Mendix Technology BV 2022. All rights reserved.",
     "author": "João Lopes",
