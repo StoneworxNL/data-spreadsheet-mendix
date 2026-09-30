@@ -1,7 +1,7 @@
 {
     "name": "xspreadsheet",
     "widgetName": "XSpreadsheet",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).",
     "copyright": "© Mendix Technology BV 2022. All rights reserved.",
     "author": "João Lopes",
@@ -21,6 +21,7 @@
         "build": "pluggable-widgets-tools build:web",
         "lint": "pluggable-widgets-tools lint",
         "lint:fix": "pluggable-widgets-tools lint:fix",
+        "test": "jest --projects ./node_modules/@mendix/pluggable-widgets-tools/test-config/jest.enzyme-free.config.js",
         "prerelease": "npm run lint",
         "release": "pluggable-widgets-tools release:web"
     },
