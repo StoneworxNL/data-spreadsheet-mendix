@@ -56,12 +56,19 @@ export function MendixSpreadsheet({
         const layout = source && source.layout;
 
         // With Height 0, a height given to the widget by CSS (its class or style) wins over the window height.
-        // Measured before the grid is added, so the grid's own size can't feed back into it.
+        // Decided the first time the widget is visible (it can start in a hidden tab), and then kept, so the grid's
+        // own size can't feed back into it: a CSS height leaves the widget shorter than its content, or, while the
+        // grid is still empty, taller than its buttons.
         const gridTop = () => el.current.getBoundingClientRect().top - root.current.getBoundingClientRect().top;
-        const cssHeight = root.current.clientHeight - gridTop() > 50;
+        let cssHeight = null;
         const viewHeight = () => {
             if (height > 0) return height;
-            if (cssHeight && root.current) return root.current.clientHeight - gridTop();
+            const widget = root.current;
+            if (cssHeight === null && widget && widget.clientHeight > 0) {
+                const available = widget.clientHeight - gridTop();
+                cssHeight = el.current.childElementCount ? available < el.current.offsetHeight - 1 : available > 50;
+            }
+            if (cssHeight && widget && widget.clientHeight > 0) return widget.clientHeight - gridTop();
             return document.documentElement.clientHeight;
         };
 
