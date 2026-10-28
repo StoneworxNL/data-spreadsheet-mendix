@@ -26,13 +26,7 @@
         "release": "pluggable-widgets-tools release:web"
     },
     "devDependencies": {
-        "@mendix/pluggable-widgets-tools": "^11.15.0",
-        "@tailwindcss/postcss7-compat": "^2.2.17",
-        "autoprefixer": "^9.8.8",
-        "postcss": "^8.5.32",
-        "postcss-less": "^6.0.0",
-        "postcss-rtlcss": "^5.7.1",
-        "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.17"
+        "@mendix/pluggable-widgets-tools": "^11.15.0"
     },
     "dependencies": {
         "chart.js": "^4.6.1",
