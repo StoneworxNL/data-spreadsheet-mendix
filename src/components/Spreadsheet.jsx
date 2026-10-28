@@ -37,8 +37,12 @@ export function MendixSpreadsheet({
     isShowSave,
     isShowDownload,
     afterSaveAction,
-    widthOffset
+    widthOffset,
+    height,
+    className,
+    style
 }) {
+    const root = useRef(null);
     const el = useRef(null);
     const loaded = useRef(null);
     const [spreadsheet, setSpreadsheet] = useState(null); // State to hold the spreadsheet instance
@@ -51,10 +55,20 @@ export function MendixSpreadsheet({
         const source = readSource(arrayBuffer);
         const layout = source && source.layout;
 
+        // With Height 0, a height given to the widget by CSS (its class or style) wins over the window height.
+        // Measured before the grid is added, so the grid's own size can't feed back into it.
+        const gridTop = () => el.current.getBoundingClientRect().top - root.current.getBoundingClientRect().top;
+        const cssHeight = root.current.clientHeight - gridTop() > 50;
+        const viewHeight = () => {
+            if (height > 0) return height;
+            if (cssHeight && root.current) return root.current.clientHeight - gridTop();
+            return document.documentElement.clientHeight;
+        };
+
         const s = new Spreadsheet(el.current, {
             ...spreadsheetOptions(layout),
             view: {
-                height: () => document.documentElement.clientHeight,
+                height: viewHeight,
                 // Never wider than the widget's own container (cards, columns, popups)
                 width: () =>
                     Math.min(
@@ -86,6 +100,19 @@ export function MendixSpreadsheet({
 
         setSpreadsheet(s); // Save the spreadsheet instance to state
     };
+
+    // x-spreadsheet only listens to window resizes; also follow the container (sidebars, tabs, layout changes)
+    useEffect(() => {
+        if (!spreadsheet || typeof ResizeObserver === "undefined" || !el.current) return undefined;
+        let lastWidth = el.current.clientWidth;
+        const observer = new ResizeObserver(() => {
+            if (!el.current || el.current.clientWidth === lastWidth) return;
+            lastWidth = el.current.clientWidth;
+            spreadsheet.sheet.reload();
+        });
+        observer.observe(el.current);
+        return () => observer.disconnect();
+    }, [spreadsheet]);
 
     useEffect(() => {
         if (spreadsheet) return;
@@ -119,7 +146,7 @@ export function MendixSpreadsheet({
     };
 
     return (
-        <div>
+        <div ref={root} className={["xspreadsheet-widget", className].filter(Boolean).join(" ")} style={style}>
             <CustomExportToolbar
                 spreadsheet={spreadsheet}
                 exportFile={exportFile}

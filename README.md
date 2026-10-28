@@ -26,7 +26,10 @@ data directly from your Mendix web app. Current features include:
 
 -   Custom toolbar;
 
--   Possibility to show download and/or save button(s);
+-   Possibility to show download and/or save button(s). Both write the file in the configured Book Type, and the file
+    name gets the matching extension;
+
+-   Height: a fixed height in pixels, a height set on the widget with CSS (its class or style), or the window height;
 
 -   Possibility to add an After Save activity, such as a nanoflow to show a success message;
 
