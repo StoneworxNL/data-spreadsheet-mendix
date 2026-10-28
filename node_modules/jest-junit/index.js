@@ -13,7 +13,7 @@ const getOutputPath = require('./utils/getOutputPath');
 // append to result
 const consoleBuffer = {};
 
-const processor = (report, reporterOptions = {}, jestRootDir = null) => {
+const processor = async (report, reporterOptions = {}, jestRootDir = null) => {
   // If jest-junit is used as a reporter allow for reporter options
   // to be used. Env and package.json will override.
   const options = getOptions.options(reporterOptions);
@@ -29,7 +29,7 @@ const processor = (report, reporterOptions = {}, jestRootDir = null) => {
     jestRootDir
   );
 
-  let outputPath = getOutputPath(options, jestRootDir);
+  let outputPath = await getOutputPath(options, jestRootDir);
 
   // Ensure output path exists
   mkdirp.sync(path.dirname(outputPath));
@@ -79,8 +79,8 @@ function JestJUnit (globalConfig, options) {
     }
   };
 
-  this.onRunComplete = (contexts, results) => {
-    processor(results, this._options, this._globalConfig.rootDir);
+  this.onRunComplete = async (contexts, results) => {
+    await processor(results, this._options, this._globalConfig.rootDir);
   };
 }
 

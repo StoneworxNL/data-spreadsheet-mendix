@@ -19,6 +19,7 @@ module.exports = {
   tokens: true,
   plugins: [
     'asyncGenerators',
+    'decoratorAutoAccessors',
     'bigInt',
     'classPrivateMethods',
     'classPrivateProperties',
@@ -31,6 +32,7 @@ module.exports = {
     'exportNamespaceFrom',
     'functionBind',
     'functionSent',
+    'importAttributes',
     'importMeta',
     'nullishCoalescingOperator',
     'numericSeparator',

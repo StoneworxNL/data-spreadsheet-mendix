@@ -5,20 +5,41 @@
 
 'use strict';
 
+const flatMap = require('array.prototype.flatmap');
+const values = require('object.values');
+
 const Components = require('../util/Components');
 const propsUtil = require('../util/props');
+const astUtil = require('../util/ast');
 const docsUrl = require('../util/docsUrl');
 const propWrapperUtil = require('../util/propWrapper');
 const report = require('../util/report');
+const eslintUtil = require('../util/eslint');
+
+const getSourceCode = eslintUtil.getSourceCode;
+const getText = eslintUtil.getText;
+
+/**
+ * Checks if prop is nested
+ * @param {Object} prop Property object, single prop type declaration
+ * @returns {boolean}
+ */
+function nestedPropTypes(prop) {
+  return (
+    prop.type === 'Property'
+    && astUtil.isCallExpression(prop.value)
+  );
+}
 
 // ------------------------------------------------------------------------------
 // Rule Definition
 // ------------------------------------------------------------------------------
 
 const messages = {
-  patternMismatch: 'Prop name ({{propName}}) doesn\'t match rule ({{pattern}})',
+  patternMismatch: 'Prop name `{{propName}}` doesn’t match rule `{{pattern}}`',
 };
 
+/** @type {import('eslint').Rule.RuleModule} */
 module.exports = {
   meta: {
     docs: {
@@ -111,7 +132,7 @@ module.exports = {
       // we can't get the name of the Flow object key name. So we have
       // to hack around it for now.
       if (node.type === 'ObjectTypeProperty') {
-        return context.getSourceCode().getFirstToken(node).value;
+        return getSourceCode(context).getFirstToken(node).value;
       }
 
       return node.key.name;
@@ -120,7 +141,7 @@ module.exports = {
     /**
      * Checks if prop is declared in flow way
      * @param {Object} prop Property object, single prop type declaration
-     * @returns {Boolean}
+     * @returns {boolean}
      */
     function flowCheck(prop) {
       return (
@@ -133,7 +154,7 @@ module.exports = {
     /**
      * Checks if prop is declared in regular way
      * @param {Object} prop Property object, single prop type declaration
-     * @returns {Boolean}
+     * @returns {boolean}
      */
     function regularCheck(prop) {
       const propKey = getPropKey(prop);
@@ -155,34 +176,22 @@ module.exports = {
     }
 
     /**
-     * Checks if prop is nested
-     * @param {Object} prop Property object, single prop type declaration
-     * @returns {Boolean}
-     */
-    function nestedPropTypes(prop) {
-      return (
-        prop.type === 'Property'
-        && prop.value.type === 'CallExpression'
-      );
-    }
-
-    /**
      * Runs recursive check on all proptypes
      * @param {Array} proptypes A list of Property object (for each proptype defined)
      * @param {Function} addInvalidProp callback to run for each error
      */
     function runCheck(proptypes, addInvalidProp) {
-      proptypes = proptypes || [];
-
-      proptypes.forEach((prop) => {
-        if (config.validateNested && nestedPropTypes(prop)) {
-          runCheck(prop.value.arguments[0].properties, addInvalidProp);
-          return;
-        }
-        if (flowCheck(prop) || regularCheck(prop) || tsCheck(prop)) {
-          addInvalidProp(prop);
-        }
-      });
+      if (proptypes) {
+        proptypes.forEach((prop) => {
+          if (config.validateNested && nestedPropTypes(prop)) {
+            runCheck(prop.value.arguments[0].properties, addInvalidProp);
+            return;
+          }
+          if (flowCheck(prop) || regularCheck(prop) || tsCheck(prop)) {
+            addInvalidProp(prop);
+          }
+        });
+      }
     }
 
     /**
@@ -228,6 +237,72 @@ module.exports = {
       args.filter((arg) => arg.type === 'ObjectExpression').forEach((object) => validatePropNaming(node, object.properties));
     }
 
+    function getComponentTypeAnnotation(component) {
+      // If this is a functional component that uses a global type, check it
+      if (
+        (component.node.type === 'FunctionDeclaration' || component.node.type === 'ArrowFunctionExpression')
+        && component.node.params
+        && component.node.params.length > 0
+        && component.node.params[0].typeAnnotation
+      ) {
+        return component.node.params[0].typeAnnotation.typeAnnotation;
+      }
+
+      if (
+        !component.node.parent
+        || component.node.parent.type !== 'VariableDeclarator'
+        || !component.node.parent.id
+        || component.node.parent.id.type !== 'Identifier'
+        || !component.node.parent.id.typeAnnotation
+        || !component.node.parent.id.typeAnnotation.typeAnnotation
+      ) {
+        return;
+      }
+
+      const annotationTypeArguments = propsUtil.getTypeArguments(
+        component.node.parent.id.typeAnnotation.typeAnnotation
+      );
+      if (
+        annotationTypeArguments && (
+          annotationTypeArguments.type === 'TSTypeParameterInstantiation'
+          || annotationTypeArguments.type === 'TypeParameterInstantiation'
+        )
+      ) {
+        return annotationTypeArguments.params.find(
+          (param) => param.type === 'TSTypeReference' || param.type === 'GenericTypeAnnotation'
+        );
+      }
+    }
+
+    function findAllTypeAnnotations(identifier, node) {
+      if (node.type === 'TSTypeLiteral' || node.type === 'ObjectTypeAnnotation' || node.type === 'TSInterfaceBody') {
+        const currentNode = [].concat(
+          objectTypeAnnotations.get(identifier.name) || [],
+          node
+        );
+        objectTypeAnnotations.set(identifier.name, currentNode);
+      } else if (
+        node.type === 'TSParenthesizedType'
+        && (
+          node.typeAnnotation.type === 'TSIntersectionType'
+          || node.typeAnnotation.type === 'TSUnionType'
+        )
+      ) {
+        node.typeAnnotation.types.forEach((type) => {
+          findAllTypeAnnotations(identifier, type);
+        });
+      } else if (
+        node.type === 'TSIntersectionType'
+        || node.type === 'TSUnionType'
+        || node.type === 'IntersectionTypeAnnotation'
+        || node.type === 'UnionTypeAnnotation'
+      ) {
+        node.types.forEach((type) => {
+          findAllTypeAnnotations(identifier, type);
+        });
+      }
+    }
+
     // --------------------------------------------------------------------------
     // Public
     // --------------------------------------------------------------------------
@@ -239,10 +314,10 @@ module.exports = {
         }
         if (
           node.value
-          && node.value.type === 'CallExpression'
+          && astUtil.isCallExpression(node.value)
           && propWrapperUtil.isPropWrapperFunction(
             context,
-            context.getSourceCode().getText(node.value.callee)
+            getText(context, node.value.callee)
           )
         ) {
           checkPropWrapperArguments(node, node.value.arguments);
@@ -265,10 +340,10 @@ module.exports = {
         }
         const right = node.parent.right;
         if (
-          right.type === 'CallExpression'
+          astUtil.isCallExpression(right)
           && propWrapperUtil.isPropWrapperFunction(
             context,
-            context.getSourceCode().getText(right.callee)
+            getText(context, right.callee)
           )
         ) {
           checkPropWrapperArguments(component.node, right.arguments);
@@ -292,16 +367,15 @@ module.exports = {
       },
 
       TypeAlias(node) {
-        // Cache all ObjectType annotations, we will check them at the end
-        if (node.right.type === 'ObjectTypeAnnotation') {
-          objectTypeAnnotations.set(node.id.name, node.right);
-        }
+        findAllTypeAnnotations(node.id, node.right);
       },
 
       TSTypeAliasDeclaration(node) {
-        if (node.typeAnnotation.type === 'TSTypeLiteral') {
-          objectTypeAnnotations.set(node.id.name, node.typeAnnotation);
-        }
+        findAllTypeAnnotations(node.id, node.typeAnnotation);
+      },
+
+      TSInterfaceDeclaration(node) {
+        findAllTypeAnnotations(node.id, node.body);
       },
 
       // eslint-disable-next-line object-shorthand
@@ -310,39 +384,37 @@ module.exports = {
           return;
         }
 
-        const list = components.list();
-        Object.keys(list).forEach((component) => {
-          // If this is a functional component that uses a global type, check it
-          if (
-            (
-              list[component].node.type === 'FunctionDeclaration'
-              || list[component].node.type === 'ArrowFunctionExpression'
-            )
-            && list[component].node.params
-            && list[component].node.params.length
-            && list[component].node.params[0].typeAnnotation
-          ) {
-            const typeNode = list[component].node.params[0].typeAnnotation;
-            const annotation = typeNode.typeAnnotation;
+        values(components.list()).forEach((component) => {
+          const annotation = getComponentTypeAnnotation(component);
+
+          if (annotation) {
             let propType;
             if (annotation.type === 'GenericTypeAnnotation') {
               propType = objectTypeAnnotations.get(annotation.id.name);
-            } else if (annotation.type === 'ObjectTypeAnnotation') {
+            } else if (annotation.type === 'ObjectTypeAnnotation' || annotation.type === 'TSTypeLiteral') {
               propType = annotation;
             } else if (annotation.type === 'TSTypeReference') {
               propType = objectTypeAnnotations.get(annotation.typeName.name);
+            } else if (annotation.type === 'TSIntersectionType') {
+              propType = flatMap(annotation.types, (type) => (
+                type.type === 'TSTypeReference'
+                  ? objectTypeAnnotations.get(type.typeName.name)
+                  : type
+              ));
             }
 
             if (propType) {
-              validatePropNaming(
-                list[component].node,
-                propType.properties || propType.members
-              );
+              [].concat(propType).filter(Boolean).forEach((prop) => {
+                validatePropNaming(
+                  component.node,
+                  prop.properties || prop.members || prop.body
+                );
+              });
             }
           }
 
-          if (list[component].invalidProps && list[component].invalidProps.length > 0) {
-            reportInvalidNaming(list[component]);
+          if (component.invalidProps && component.invalidProps.length > 0) {
+            reportInvalidNaming(component);
           }
         });
 

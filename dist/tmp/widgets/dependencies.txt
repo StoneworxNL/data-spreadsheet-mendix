@@ -5,7 +5,7 @@ Private: false
 Description: a javascript xpreadsheet
 Repository: https://github.com/myliang/x-spreadsheet.git
 Author: myliang <liangyuliang0335@gmail.com>
-License Copyright:
+License Text:
 ===
 
 MIT License
@@ -40,7 +40,7 @@ Description: SheetJS Spreadsheet data parser and writer
 Repository: git://github.com/SheetJS/sheetjs.git
 Homepage: https://sheetjs.com/
 Author: sheetjs
-License Copyright:
+License Text:
 ===
 
                                  Apache License
@@ -255,7 +255,7 @@ Description: SheetJS Spreadsheet Community Edition plus Basic Cell Styles
 Repository: git://github.com/gitbrent/xlsx-js-style.git
 Homepage: https://github.com/gitbrent/xlsx-js-style/
 Author: gitbrent
-License Copyright:
+License Text:
 ===
 
                                  Apache License
@@ -470,7 +470,7 @@ Description: css color parsing, manupulation and conversion
 Repository: git+https://github.com/kurkle/color.git
 Homepage: https://github.com/kurkle/color#readme
 Author: Jukka Kurkela
-License Copyright:
+License Text:
 ===
 
 The MIT License (MIT)
@@ -486,13 +486,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ---
 
 Name: chart.js
-Version: 4.4.7
+Version: 4.6.1
 License: MIT
 Private: false
 Description: Simple HTML5 charts using the canvas element.
 Repository: https://github.com/chartjs/Chart.js.git
 Homepage: https://www.chartjs.org
-License Copyright:
+License Text:
 ===
 
 The MIT License (MIT)

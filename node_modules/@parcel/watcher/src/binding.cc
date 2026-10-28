@@ -18,7 +18,7 @@ std::unordered_set<std::string> getIgnorePaths(Env env, Value opts) {
     if (v.IsArray()) {
       Array items = v.As<Array>();
       for (size_t i = 0; i < items.Length(); i++) {
-        Value item = items.Get(Number::New(env, i));
+        Value item = items.Get(Number::New(env, static_cast<double>(i)));
         if (item.IsString()) {
           result.insert(std::string(item.As<String>().Utf8Value().c_str()));
         }
@@ -37,10 +37,14 @@ std::unordered_set<Glob> getIgnoreGlobs(Env env, Value opts) {
     if (v.IsArray()) {
       Array items = v.As<Array>();
       for (size_t i = 0; i < items.Length(); i++) {
-        Value item = items.Get(Number::New(env, i));
+        Value item = items.Get(Number::New(env, static_cast<double>(i)));
         if (item.IsString()) {
           auto key = item.As<String>().Utf8Value();
-          result.emplace(key);
+          try {
+            result.emplace(key);
+          } catch (const std::regex_error& e) {
+            Error::New(env, e.what()).ThrowAsJavaScriptException();
+          }
         }
       }
     }
@@ -112,12 +116,15 @@ private:
 
   void execute() override {
     backend->getEventsSince(watcher, &snapshotPath);
+    if (watcher->mEvents.hasError()) {
+      throw std::runtime_error(watcher->mEvents.getError());
+    }
   }
 
   Value getResult() override {
     std::vector<Event> events = watcher->mEvents.getEvents();
     Array eventsArray = Array::New(env, events.size());
-    size_t i = 0;
+    uint32_t i = 0;
     for (auto it = events.begin(); it != events.end(); it++) {
       eventsArray.Set(i++, it->toJS(env));
     }
@@ -176,7 +183,7 @@ private:
   void execute() override {
     try {
       backend->watch(watcher);
-    } catch (std::exception &err) {
+    } catch (std::exception&) {
       watcher->destroy();
       throw;
     }

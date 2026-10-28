@@ -33,14 +33,27 @@ class Receiver extends Writable {
    * @param {Boolean} [isServer=false] Specifies whether to operate in client or
    *     server mode
    * @param {Number} [maxPayload=0] The maximum allowed message length
+   * @param {Number} [maxBufferedChunks=0] The maximum number of
+   *     buffered data chunks
+   * @param {Number} [maxFragments=0] The maximum number of message
+   *     fragments
    */
-  constructor(binaryType, extensions, isServer, maxPayload) {
+  constructor(
+    binaryType,
+    extensions,
+    isServer,
+    maxPayload,
+    maxBufferedChunks,
+    maxFragments
+  ) {
     super();
 
     this._binaryType = binaryType || BINARY_TYPES[0];
     this[kWebSocket] = undefined;
     this._extensions = extensions || {};
     this._isServer = !!isServer;
+    this._maxBufferedChunks = maxBufferedChunks | 0;
+    this._maxFragments = maxFragments | 0;
     this._maxPayload = maxPayload | 0;
 
     this._bufferedBytes = 0;
@@ -56,6 +69,7 @@ class Receiver extends Writable {
 
     this._totalPayloadLength = 0;
     this._messageLength = 0;
+    this._numFragments = 0;
     this._fragments = [];
 
     this._state = GET_INFO;
@@ -72,6 +86,21 @@ class Receiver extends Writable {
    */
   _write(chunk, encoding, cb) {
     if (this._opcode === 0x08 && this._state == GET_INFO) return cb();
+
+    if (
+      this._maxBufferedChunks > 0 &&
+      this._buffers.length >= this._maxBufferedChunks
+    ) {
+      return cb(
+        error(
+          RangeError,
+          'Too many buffered chunks',
+          false,
+          1008,
+          'WS_ERR_TOO_MANY_BUFFERED_PARTS'
+        )
+      );
+    }
 
     this._bufferedBytes += chunk.length;
     this._buffers.push(chunk);
@@ -417,6 +446,17 @@ class Receiver extends Writable {
 
     if (this._opcode > 0x07) return this.controlMessage(data);
 
+    if (this._maxFragments > 0 && ++this._numFragments > this._maxFragments) {
+      this._loop = false;
+      return error(
+        RangeError,
+        'Too many message fragments',
+        false,
+        1008,
+        'WS_ERR_TOO_MANY_BUFFERED_PARTS'
+      );
+    }
+
     if (this._compressed) {
       this._state = INFLATING;
       this.decompress(data, cb);
@@ -486,6 +526,7 @@ class Receiver extends Writable {
       this._totalPayloadLength = 0;
       this._messageLength = 0;
       this._fragmented = 0;
+      this._numFragments = 0;
       this._fragments = [];
 
       if (this._opcode === 2) {

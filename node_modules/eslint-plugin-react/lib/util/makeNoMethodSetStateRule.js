@@ -5,8 +5,12 @@
 
 'use strict';
 
+const findLast = require('array.prototype.findlast');
+
 const docsUrl = require('./docsUrl');
 const report = require('./report');
+const getAncestors = require('./eslint').getAncestors;
+const testReactVersion = require('./version').testReactVersion;
 
 // ------------------------------------------------------------------------------
 // Rule Definition
@@ -29,11 +33,28 @@ const messages = {
   noSetState: 'Do not use setState in {{name}}',
 };
 
-function makeNoMethodSetStateRule(methodName, shouldCheckUnsafeCb) {
+const methodNoopsAsOf = {
+  componentDidMount: '>= 16.3.0',
+  componentDidUpdate: '>= 16.3.0',
+};
+
+function shouldBeNoop(context, methodName) {
+  return methodName in methodNoopsAsOf
+    && testReactVersion(context, methodNoopsAsOf[methodName])
+    && !testReactVersion(context, '999.999.999'); // for when the version is not specified
+}
+
+// eslint-disable-next-line valid-jsdoc
+/**
+ * @param {string} methodName
+ * @param {(context: import('eslint').Rule.RuleContext) => boolean} [shouldCheckUnsafeCb]
+ * @returns {import('eslint').Rule.RuleModule}
+ */
+module.exports = function makeNoMethodSetStateRule(methodName, shouldCheckUnsafeCb) {
   return {
     meta: {
       docs: {
-        description: `Prevent usage of setState in ${methodName}`,
+        description: `Disallow usage of setState in ${methodName}`,
         category: 'Best Practices',
         recommended: false,
         url: docsUrl(mapTitle(methodName)),
@@ -61,26 +82,31 @@ function makeNoMethodSetStateRule(methodName, shouldCheckUnsafeCb) {
         return false;
       }
 
+      if (shouldBeNoop(context, methodName)) {
+        return {};
+      }
+
       // --------------------------------------------------------------------------
       // Public
       // --------------------------------------------------------------------------
 
       return {
-
         CallExpression(node) {
           const callee = node.callee;
           if (
             callee.type !== 'MemberExpression'
             || callee.object.type !== 'ThisExpression'
+            || !('name' in callee.property)
             || callee.property.name !== 'setState'
           ) {
             return;
           }
-          const ancestors = context.getAncestors(callee).reverse();
+          const ancestors = getAncestors(context, node);
           let depth = 0;
-          ancestors.some((ancestor) => {
+          findLast(ancestors, (ancestor) => {
+          // ancestors.some((ancestor) => {
             if (/Function(Expression|Declaration)$/.test(ancestor.type)) {
-              depth++;
+              depth += 1;
             }
             if (
               (ancestor.type !== 'Property' && ancestor.type !== 'MethodDefinition' && ancestor.type !== 'ClassProperty' && ancestor.type !== 'PropertyDefinition')
@@ -101,6 +127,4 @@ function makeNoMethodSetStateRule(methodName, shouldCheckUnsafeCb) {
       };
     },
   };
-}
-
-module.exports = makeNoMethodSetStateRule;
+};
