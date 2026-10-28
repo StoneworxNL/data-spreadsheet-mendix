@@ -55,7 +55,12 @@ export function MendixSpreadsheet({
             ...spreadsheetOptions(layout),
             view: {
                 height: () => document.documentElement.clientHeight,
-                width: () => document.documentElement.clientWidth - widthOffset
+                // Never wider than the widget's own container (cards, columns, popups)
+                width: () =>
+                    Math.min(
+                        document.documentElement.clientWidth - widthOffset,
+                        el.current && el.current.clientWidth ? el.current.clientWidth : Infinity
+                    )
             },
             // Initially set readOnly based on the prop
             ...(!editable && {

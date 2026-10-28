@@ -54,6 +54,8 @@ export function registerFontFallbacks(names) {
 }
 
 function familyOf(name) {
+    // Condensed faces (Aptos Narrow, Excel's default since 2023) need a condensed fallback, or text overflows its cell
+    if (/narrow|condensed/i.test(name)) return ["Arial Narrow", "Liberation Sans Narrow", ...SANS];
     if (/consolas|courier|mono|menlo|code/i.test(name)) return MONO;
     if (/cambria|georgia|times|garamond|serif|book|caladea/i.test(name) && !/sans/i.test(name)) return SERIF;
     return SANS;
