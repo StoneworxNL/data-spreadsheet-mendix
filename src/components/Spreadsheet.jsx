@@ -15,6 +15,22 @@ const EDIT_MODE_SPARE = { spareRows: 100, spareCols: 26 };
 
 // Styles, sizes, charts and pictures from the package XML. A file that can't be read this way (csv, xls) or has
 // unexpected XML still loads, just without them.
+// x-spreadsheet adds window listeners (resize, click, paste, keydown) and never removes them. Record the ones it adds
+// while it is created, so they can be removed with the grid.
+function createWithListeners(create) {
+    const added = [];
+    const add = window.addEventListener;
+    window.addEventListener = function (...args) {
+        added.push(args);
+        return add.apply(this, args);
+    };
+    try {
+        return { instance: create(), remove: () => added.forEach(args => window.removeEventListener(...args)) };
+    } finally {
+        window.addEventListener = add;
+    }
+}
+
 function readSource(arrayBuffer) {
     try {
         const pkg = openPackage(arrayBuffer);
@@ -45,11 +61,27 @@ export function MendixSpreadsheet({
     const root = useRef(null);
     const el = useRef(null);
     const loaded = useRef(null);
+    // The file version shown (its URL holds a changed date) and whether the next new version is our own save
+    const shown = useRef({ key: null, build: 0, ownSave: false });
     const [spreadsheet, setSpreadsheet] = useState(null); // State to hold the spreadsheet instance
+    const [loadError, setLoadError] = useState(null);
 
-    const buildSpreadSheet = async () => {
+    const destroy = () => {
+        const current = loaded.current;
+        loaded.current = null;
+        if (!current) return;
+        if (current.drawings) current.drawings.destroy();
+        current.uninstallRenderPatches();
+        current.removeListeners();
+        if (el.current) el.current.innerHTML = "";
+    };
+
+    const buildSpreadSheet = async build => {
         const response = await fetch(fileDocument.value.uri);
+        if (!response.ok) throw new Error(`The file could not be loaded (HTTP ${response.status}).`);
         const arrayBuffer = await response.arrayBuffer();
+        // A newer file or setting arrived while this one was loading
+        if (build !== shown.current.build || !el.current) return;
         // cellNF keeps number formats, so dates/currencies/percentages are written back with them
         const workbook = XLSX.read(arrayBuffer, { type: "array", cellNF: true });
         const source = readSource(arrayBuffer);
@@ -72,26 +104,30 @@ export function MendixSpreadsheet({
             return document.documentElement.clientHeight;
         };
 
-        const s = new Spreadsheet(el.current, {
-            ...spreadsheetOptions(layout),
-            view: {
-                height: viewHeight,
-                // Never wider than the widget's own container (cards, columns, popups)
-                width: () =>
-                    Math.min(
-                        document.documentElement.clientWidth - widthOffset,
-                        el.current && el.current.clientWidth ? el.current.clientWidth : Infinity
-                    )
-            },
-            // Initially set readOnly based on the prop
-            ...(!editable && {
-                // Spread the conditional options
-                mode: "read",
-                showToolbar: false,
-                showGrid: false,
-                showContextmenu: false
-            })
-        });
+        destroy();
+        const { instance: s, remove: removeListeners } = createWithListeners(
+            () =>
+                new Spreadsheet(el.current, {
+                    ...spreadsheetOptions(layout),
+                    view: {
+                        height: viewHeight,
+                        // Never wider than the widget's own container (cards, columns, popups)
+                        width: () =>
+                            Math.min(
+                                document.documentElement.clientWidth - widthOffset,
+                                el.current && el.current.clientWidth ? el.current.clientWidth : Infinity
+                            )
+                    },
+                    // Initially set readOnly based on the prop
+                    ...(!editable && {
+                        // Spread the conditional options
+                        mode: "read",
+                        showToolbar: false,
+                        showGrid: false,
+                        showContextmenu: false
+                    })
+                })
+        );
 
         const uninstallRenderPatches = installRenderPatches(s);
         const data = stox(workbook, { ...(editable && EDIT_MODE_SPARE), layout });
@@ -103,7 +139,7 @@ export function MendixSpreadsheet({
         if (layout) {
             registerFontFallbacks(layout.fontNames).then(added => added && s.reRender());
         }
-        loaded.current = { source, originals, drawings, uninstallRenderPatches };
+        loaded.current = { source, originals, drawings, uninstallRenderPatches, removeListeners };
 
         setSpreadsheet(s); // Save the spreadsheet instance to state
     };
@@ -121,22 +157,45 @@ export function MendixSpreadsheet({
         return () => observer.disconnect();
     }, [spreadsheet]);
 
+    // Load the file, and load it again when it is replaced, changed elsewhere, or Editable changes.
+    // A new version created by our own Save is already on screen, so that one is skipped.
+    const fileUri =
+        fileDocument && fileDocument.status === "available" && fileDocument.value ? fileDocument.value.uri : null;
     useEffect(() => {
-        if (spreadsheet) return;
-        if (fileDocument && fileDocument.status === "available" && fileDocument.value.uri) {
-            // setFile(fileDocument);
-            buildSpreadSheet();
+        if (!fileUri) return;
+        const key = `${fileUri}|${editable}`;
+        const state = shown.current;
+        if (key === state.key) return;
+        const sameSettings = state.key && state.key.endsWith(`|${editable}`);
+        state.key = key;
+        if (state.ownSave && sameSettings) {
+            state.ownSave = false;
+            return;
         }
-    }, [fileDocument]); // Add editable to the dependency array
+        state.ownSave = false;
+        const build = ++state.build;
+        setLoadError(null);
+        buildSpreadSheet(build).catch(error => {
+            if (build !== shown.current.build) return;
+            console.error("XSpreadsheet:", error);
+            setLoadError(error.message || String(error));
+        });
+    }, [fileUri, editable]);
 
     useEffect(
         () => () => {
-            if (!loaded.current) return;
-            if (loaded.current.drawings) loaded.current.drawings.destroy();
-            loaded.current.uninstallRenderPatches();
+            shown.current.build++;
+            destroy();
         },
         []
     );
+
+    // Our save shows up as a new file version shortly after; don't let a save that changed nothing (e.g. one the app
+    // rejected) hide a later change made elsewhere
+    const markOwnSave = () => {
+        shown.current.ownSave = true;
+        setTimeout(() => (shown.current.ownSave = false), 10000);
+    };
 
     // The file for the grid's current content, with the loaded file's charts and pictures copied back in
     const exportFile = options => {
@@ -166,8 +225,11 @@ export function MendixSpreadsheet({
                 isShowSave={isShowSave && editable}
                 isShowDownload={isShowDownload}
                 afterSaveAction={afterSaveAction}
+                onSaved={markOwnSave}
             />
-            <div id="gridctr" ref={el} className={editable ? "" : "readonly"} />
+            {loadError && <div className="alert alert-danger xs-load-error">{loadError}</div>}
+            {/* The id is kept for apps that style #gridctr; new styles should use the class */}
+            <div id="gridctr" ref={el} className={editable ? "xs-grid" : "xs-grid readonly"} />
         </div>
     );
 }

@@ -1,5 +1,5 @@
-#gridctr.readonly .x-spreadsheet .x-spreadsheet-bottombar .x-spreadsheet-contextmenu,
-#gridctr.readonly .x-spreadsheet .x-spreadsheet-bottombar ul > li:first-child > div:first-child {
+.xs-grid.readonly .x-spreadsheet .x-spreadsheet-bottombar .x-spreadsheet-contextmenu,
+.xs-grid.readonly .x-spreadsheet .x-spreadsheet-bottombar ul > li:first-child > div:first-child {
     cursor: default;
     display: none;
     visibility: hidden;

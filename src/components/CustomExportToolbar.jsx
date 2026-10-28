@@ -29,7 +29,8 @@ export function CustomExportToolbar({
     cellStyles,
     isShowSave,
     isShowDownload,
-    afterSaveAction
+    afterSaveAction,
+    onSaved
 }) {
     const format = FILE_TYPES[bookType] ? bookType : "xlsx";
 
@@ -63,6 +64,7 @@ export function CustomExportToolbar({
             {},
             fileBlob,
             () => {
+                if (onSaved) onSaved();
                 if (afterSaveAction && afterSaveAction.canExecute && !afterSaveAction.isExecuting) {
                     afterSaveAction.execute();
                 }

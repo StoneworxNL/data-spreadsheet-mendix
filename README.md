@@ -35,9 +35,8 @@ data directly from your Mendix web app. Current features include:
 
 -   Export settings fully customizable;
 
--   Customize css. The spreadsheet is wrapped by the id below:
-
-    -   #gridctr
+-   Customize css: the widget's root has the class `xspreadsheet-widget` (plus your own class), and the grid sits in
+    `.xs-grid`. The old `#gridctr` id still works but isn't unique when a page has several spreadsheets.
 
 ## Usage
 

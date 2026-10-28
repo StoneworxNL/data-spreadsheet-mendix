@@ -33,11 +33,11 @@ SOFTWARE.
 ---
 
 Name: xlsx
-Version: 0.18.5
+Version: 0.20.3
 License: Apache-2.0
 Private: false
 Description: SheetJS Spreadsheet data parser and writer
-Repository: git://github.com/SheetJS/sheetjs.git
+Repository: https://git.sheetjs.com/SheetJS/sheetjs
 Homepage: https://sheetjs.com/
 Author: sheetjs
 License Text:
