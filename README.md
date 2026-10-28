@@ -14,7 +14,15 @@ data directly from your Mendix web app. Current features include:
 
 -   Multiple sheets;
 
--   Cell formulas available;
+-   Cell formulas available. Loaded formulas show the result Excel saved; simple ones (SUM, AVERAGE, MIN, MAX, IF,
+    arithmetic) recalculate when you edit the cells they use;
+
+-   Excel styling: fonts, font colours, fills, borders, alignment, wrapped text, column widths, row heights, hidden
+    rows/columns and frozen panes. Styles are kept when you save or download;
+
+-   Charts and pictures: column, bar, line, area, pie, doughnut, scatter and radar charts are drawn over the grid where
+    Excel placed them, follow scrolling, and update when you edit their data. They are kept when you save or download as
+    .xlsx/.xlsm;
 
 -   Custom toolbar;
 
@@ -60,8 +68,14 @@ data directly from your Mendix web app. Current features include:
     this widget's logic as per this
     [Stack Overflow post](https://superuser.com/questions/1720362/firefox-scroll-bar-disappearing).
 
--   ⚠️ This widget contains some limitations, namely, the converstion method ignores the styles - "The underlying grid
-    component includes many additional features that work with SheetJS Pro." -
-    ![Reference Documentation](https://docs.sheetjs.com/docs/demos/grid/xs).
+-   ⚠️ Styling limitations: conditional formatting, rich text inside a cell, pattern and gradient fills (shown as a
+    solid colour), diagonal borders and theme colours (saved as RGB) aren't supported.
+
+-   ⚠️ Chart limitations: charts are view-only (drag, resize and chart editing aren't available), data labels,
+    trendlines and secondary axes aren't drawn, and 3D charts are drawn flat. Charts stay where they were anchored when
+    rows or columns are inserted above them. Saving to formats other than .xlsx/.xlsm drops charts.
+
+-   ⚠️ Formulas that x-spreadsheet can't calculate the way Excel does (e.g. VLOOKUP, ROUND, or a division whose result
+    differs from Excel's) keep showing the value Excel saved until the file is opened in Excel again.
 
 -   🙌 Feel free to suggest us new features or report bugs.

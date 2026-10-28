@@ -1,9 +1,8 @@
 import { createElement } from "react";
-import * as XLSX from "xlsx";
-import { xtos } from "../external/xlsxspread.js";
 
 export function CustomExportToolbar({
     spreadsheet,
+    exportFile,
     file,
     bookSST,
     compression,
@@ -16,18 +15,25 @@ export function CustomExportToolbar({
 }) {
     const handleDownload = () => {
         if (spreadsheet) {
-            const new_wb = xtos(spreadsheet.getData());
-            XLSX.writeFile(new_wb, file.value.name);
+            const fileData = exportFile({ bookType: "xlsx", type: "array", compression: true });
+            const url = URL.createObjectURL(
+                new Blob([fileData], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+            );
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = file.value.name;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
         }
     };
 
     const handleSave = () => {
         if (spreadsheet) {
-            const new_wb = xtos(spreadsheet.getData());
-
             // https://docs.sheetjs.com/docs/api/write-options/
             // Generate the file blob
-            const fileData = XLSX.write(new_wb, {
+            const fileData = exportFile({
                 bookSST: bookSST,
                 compression: compression,
                 bookType: bookType, //"xlsx",
