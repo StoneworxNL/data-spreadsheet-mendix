@@ -192,3 +192,13 @@ describe("renameSheetRefs", () => {
         );
     });
 });
+
+describe("toolbar number formats", () => {
+    it("writes the currency format picked in the toolbar", () => {
+        const { xtos } = require("../xlsxspread");
+        const wb = xtos([
+            { name: "S", styles: [{ format: "eur" }], rows: { 0: { cells: { 0: { text: "1250", style: 0 } } } } }
+        ]);
+        expect(wb.Sheets.S.A1).toEqual(expect.objectContaining({ t: "n", v: 1250, z: '"€"#,##0.00' }));
+    });
+});

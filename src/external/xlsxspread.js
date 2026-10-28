@@ -18,6 +18,15 @@ const MAX_NUMBER_DIGITS = 15;
 const NUMBER_PATTERN = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 const THOUSANDS_PATTERN = /^[+-]?\d{1,3}(,\d{3})+(\.\d*)?$/;
 
+// x-spreadsheet toolbar formats that have an exact Excel equivalent. Its percent, date and time formats only add
+// text around the typed value, so they have none.
+const TOOLBAR_FORMATS = {
+    number: "#,##0.00",
+    usd: '"$"#,##0.00',
+    eur: '"€"#,##0.00',
+    rmb: '"¥"#,##0.00'
+};
+
 const MAX_SHEET_NAME_LENGTH = 31;
 const INVALID_SHEET_NAME_CHARS = /[:\\/?*[\]]/g;
 
@@ -213,6 +222,9 @@ export function xtos(sdata, { defaultStyle = null } = {}) {
                 if (!cell && style) cell = { t: "z" };
                 if (cell) {
                     if (style) cell.s = style;
+                    // A number format picked in the toolbar replaces the cell's own
+                    const gridFormat = cells[colKey].style !== undefined && styles[cells[colKey].style].format;
+                    if (cell.t === "n" && TOOLBAR_FORMATS[gridFormat]) cell.z = TOOLBAR_FORMATS[gridFormat];
                     ws[XLSX.utils.encode_cell({ r, c })] = cell;
                     lastRow = Math.max(lastRow, r);
                     lastCol = Math.max(lastCol, c);
