@@ -6,7 +6,7 @@
     "copyright": "© Stoneworx 2026. All rights reserved.",
     "author": "Stoneworx",
     "engines": {
-        "node": ">=22.18.0"
+        "node": ">=22.20.0"
     },
     "license": "MIT",
     "config": {
