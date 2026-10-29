@@ -1,0 +1,13 @@
+# Dependencies: install with npm ci
+node_modules/
+
+# Build output; release packages are attached to GitHub releases
+dist/tmp/
+dist/coverage/
+*.log
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
