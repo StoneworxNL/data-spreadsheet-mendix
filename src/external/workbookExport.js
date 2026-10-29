@@ -43,7 +43,11 @@ export function exportWorkbook({ sheets, source = null, options = {}, defaultSty
         { defaultStyle }
     );
 
-    let bytes = new Uint8Array(XLSXStyle.write(wb, { ...options, bookType, type: "array" }));
+    // Keep the macros of a macro-enabled workbook
+    const vba = bookType === "xlsm" && source && source.pkg ? source.pkg.bytes("xl/vbaProject.bin") : null;
+    if (vba) wb.vbaraw = vba;
+
+    let bytes = new Uint8Array(XLSXStyle.write(wb, { ...options, bookType, bookVBA: Boolean(vba), type: "array" }));
     if (ZIP_BOOK_TYPES.includes(bookType)) {
         bytes = finishPackage(bytes, {
             sheets: sheets.map((sheet, i) => ({

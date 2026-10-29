@@ -6,6 +6,7 @@ const FILE_TYPES = {
     xlsm: ["xlsm", "application/vnd.ms-excel.sheet.macroEnabled.12"],
     xlsb: ["xlsb", "application/vnd.ms-excel.sheet.binary.macroEnabled.12"],
     biff8: ["xls", "application/vnd.ms-excel"],
+    ods: ["ods", "application/vnd.oasis.opendocument.spreadsheet"],
     numbers: ["numbers", "application/x-iwork-numbers-sffnumbers"],
     csv: ["csv", "text/csv"],
     txt: ["txt", "text/plain"],
@@ -19,6 +20,15 @@ export function fileNameFor(name, bookType) {
     return `${base}.${extension}`;
 }
 
+// The Book Type of a file name's extension, used to save a file in the format it was loaded in
+export function bookTypeOf(name) {
+    const extension = String(name || "")
+        .slice(String(name || "").lastIndexOf(".") + 1)
+        .toLowerCase();
+    const type = Object.keys(FILE_TYPES).find(key => FILE_TYPES[key][0] === extension);
+    return type || "xlsx";
+}
+
 export function CustomExportToolbar({
     spreadsheet,
     exportFile,
@@ -30,23 +40,25 @@ export function CustomExportToolbar({
     isShowSave,
     isShowDownload,
     afterSaveAction,
-    onSaved
+    onSaveStart,
+    onSaveFailed
 }) {
-    const format = FILE_TYPES[bookType] ? bookType : "xlsx";
+    // Download uses the widget's Book Type. Save keeps the format of the file that was loaded, so it never replaces
+    // a workbook with, say, a single-sheet CSV.
+    const downloadFormat = FILE_TYPES[bookType] ? bookType : "xlsx";
 
-    // Save and Download produce the same file, in the format and with the options set on the widget.
     // https://docs.sheetjs.com/docs/api/write-options/
-    const createFile = () => {
+    const createFile = format => {
         const fileData = exportFile({ bookSST, compression, bookType: format, cellStyles, type: "array" });
         return new Blob([fileData], { type: FILE_TYPES[format][1] });
     };
 
     const handleDownload = () => {
         if (!spreadsheet) return;
-        const url = URL.createObjectURL(createFile());
+        const url = URL.createObjectURL(createFile(downloadFormat));
         const link = document.createElement("a");
         link.href = url;
-        link.download = fileNameFor(file.value.name, format);
+        link.download = fileNameFor(file.value.name, downloadFormat);
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -55,21 +67,23 @@ export function CustomExportToolbar({
 
     const handleSave = () => {
         if (!spreadsheet) return;
-        const fileBlob = createFile();
+        const fileBlob = createFile(bookTypeOf(file.value.name));
         const guid = new URL(file.value.uri).searchParams.get("guid");
 
+        // Before saving: the refreshed file document can reach the widget before the success callback runs
+        if (onSaveStart) onSaveStart();
         mx.data.saveDocument(
             guid,
-            fileNameFor(file.value.name, format),
+            file.value.name,
             {},
             fileBlob,
             () => {
-                if (onSaved) onSaved();
                 if (afterSaveAction && afterSaveAction.canExecute && !afterSaveAction.isExecuting) {
                     afterSaveAction.execute();
                 }
             },
             error => {
+                if (onSaveFailed) onSaveFailed();
                 console.error(error);
                 if (window.mx && mx.ui && mx.ui.error) {
                     mx.ui.error(`The file could not be saved. ${error && error.message ? error.message : ""}`.trim());

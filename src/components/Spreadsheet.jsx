@@ -13,6 +13,9 @@ import "../ui/XSpreadsheet.css";
 // Empty rows/columns past the data to type into in edit mode (the size of a blank x-spreadsheet sheet)
 const EDIT_MODE_SPARE = { spareRows: 100, spareCols: 26 };
 
+// Files are parsed in the browser; beyond this they make the page unresponsive
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+
 // Styles, sizes, charts and pictures from the package XML. A file that can't be read this way (csv, xls) or has
 // unexpected XML still loads, just without them.
 // x-spreadsheet adds window listeners (resize, click, paste, keydown) and never removes them. Record the ones it adds
@@ -20,15 +23,20 @@ const EDIT_MODE_SPARE = { spareRows: 100, spareCols: 26 };
 function createWithListeners(create) {
     const added = [];
     const add = window.addEventListener;
-    window.addEventListener = function (...args) {
+    window.addEventListener = (...args) => {
         added.push(args);
-        return add.apply(this, args);
+        return add.apply(window, args);
     };
     try {
         return { instance: create(), remove: () => added.forEach(args => window.removeEventListener(...args)) };
     } finally {
         window.addEventListener = add;
     }
+}
+
+function tooLarge(bytes) {
+    const mb = size => Math.round((size / (1024 * 1024)) * 10) / 10;
+    return `The file is too large to open here (${mb(bytes)} MB; the limit is ${mb(MAX_FILE_BYTES)} MB).`;
 }
 
 function readSource(arrayBuffer) {
@@ -79,7 +87,10 @@ export function MendixSpreadsheet({
     const buildSpreadSheet = async build => {
         const response = await fetch(fileDocument.value.uri);
         if (!response.ok) throw new Error(`The file could not be loaded (HTTP ${response.status}).`);
+        const declaredSize = Number(response.headers.get("Content-Length"));
+        if (declaredSize > MAX_FILE_BYTES) throw new Error(tooLarge(declaredSize));
         const arrayBuffer = await response.arrayBuffer();
+        if (arrayBuffer.byteLength > MAX_FILE_BYTES) throw new Error(tooLarge(arrayBuffer.byteLength));
         // A newer file or setting arrived while this one was loading
         if (build !== shown.current.build || !el.current) return;
         // cellNF keeps number formats, so dates/currencies/percentages are written back with them
@@ -161,8 +172,18 @@ export function MendixSpreadsheet({
     // A new version created by our own Save is already on screen, so that one is skipped.
     const fileUri =
         fileDocument && fileDocument.status === "available" && fileDocument.value ? fileDocument.value.uri : null;
+    const fileGone = Boolean(fileDocument) && fileDocument.status !== "loading" && !fileUri;
     useEffect(() => {
-        if (!fileUri) return;
+        if (!fileUri) {
+            // The file was cleared or can't be read any more: don't keep showing the old one
+            if (fileGone && shown.current.key) {
+                shown.current.key = null;
+                shown.current.build++;
+                destroy();
+                setSpreadsheet(null);
+            }
+            return;
+        }
         const key = `${fileUri}|${editable}`;
         const state = shown.current;
         if (key === state.key) return;
@@ -180,7 +201,7 @@ export function MendixSpreadsheet({
             console.error("XSpreadsheet:", error);
             setLoadError(error.message || String(error));
         });
-    }, [fileUri, editable]);
+    }, [fileUri, fileGone, editable]);
 
     useEffect(
         () => () => {
@@ -195,6 +216,9 @@ export function MendixSpreadsheet({
     const markOwnSave = () => {
         shown.current.ownSave = true;
         setTimeout(() => (shown.current.ownSave = false), 10000);
+    };
+    const clearOwnSave = () => {
+        shown.current.ownSave = false;
     };
 
     // The file for the grid's current content, with the loaded file's charts and pictures copied back in
@@ -225,7 +249,8 @@ export function MendixSpreadsheet({
                 isShowSave={isShowSave && editable}
                 isShowDownload={isShowDownload}
                 afterSaveAction={afterSaveAction}
-                onSaved={markOwnSave}
+                onSaveStart={markOwnSave}
+                onSaveFailed={clearOwnSave}
             />
             {loadError && <div className="alert alert-danger xs-load-error">{loadError}</div>}
             {/* The id is kept for apps that style #gridctr; new styles should use the class */}

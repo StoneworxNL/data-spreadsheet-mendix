@@ -2,7 +2,9 @@
 
 A Mendix widget to view and edit excel files / spreadsheets based on https://github.com/myliang/x-spreadsheet.
 
-<img alt="Mendix Pluggable Widget Data Spreadsheet Logo" src="https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/images/logo.jpeg" width="65px"/>
+**Requires Mendix 11 or later** (version 2.0.0 and up; use 1.0.x for Mendix 10).
+
+<img alt="Mendix Pluggable Widget Data Spreadsheet Logo" src="images/logo.jpeg" width="65px"/>
 
 ## Features
 
@@ -26,8 +28,8 @@ data directly from your Mendix web app. Current features include:
 
 -   Custom toolbar;
 
--   Possibility to show download and/or save button(s). Both write the file in the configured Book Type, and the file
-    name gets the matching extension;
+-   Possibility to show download and/or save button(s). Download writes the configured Book Type with the matching
+    extension; Save always keeps the format of the loaded file, so a workbook is never replaced by, say, a CSV;
 
 -   Height: a fixed height in pixels, a height set on the widget with CSS (its class or style), or the window height;
 
@@ -42,29 +44,37 @@ data directly from your Mendix web app. Current features include:
 
 1. Add a dataview that fetches the .xlsx file you wish to display/edit.
 2. Inside the dataview, add the x-spreadsheet widget.
-3. Custumize it. Make it editable/view-only; Decide if you want to show the Save/Download button. Define a width margin
+3. Customize it. Make it editable/view-only; Decide if you want to show the Save/Download button. Define a width margin
    if needed.
 4. In case you want to export (save/download), define the export options.
 
 ### General Settings
 
-![Usage in Mendix Studio Pro (General)](https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/images/studiopro0.png)
+![Usage in Mendix Studio Pro (General)](images/studiopro0.png)
 
 ### Export Settings
 
-![Usage in Mendix Studio Pro (Export Settings)](https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/images/studiopro1.png)
+![Usage in Mendix Studio Pro (Export Settings)](images/studiopro1.png)
+
+## Security
+
+-   Save runs in the browser: it stores the new content in the file document (through `mx.data.saveDocument` on the
+    object's id). What protects the file is the entity access on your file document entity, so only give write access to
+    roles that may change the file.
+-   Files are parsed in the browser and treated as untrusted: font names must be plain names, pictures are only shown
+    when they are raster images (PNG, JPEG, GIF, BMP, WebP), and files above 20 MB aren't opened.
 
 ## Demo project
 
 -   [Mendix app running on the cloud](https://x-spreadsheet-demo-sandbox.mxapps.io/index.html)
--   [Mendix demo module (.mpk)](https://github.com/StoneworxNL/xspreadsheet/tree/main/demo)
+-   [Mendix demo module (.mpk)](demo/)
 -   [Marketplace widget](https://marketplace.mendix.com/link/component/237438)
 <!-- - [Mendix demo scss (.scss)](https://github.com/joaodelopes/block-note-mendix/blob/main/demo/demo.scss) -->
 
 ## Issues, suggestions and feature requests
 
--   ⚠️ Performance is a problem when handling large files. In part, this is a limitation of the SheetJs free version.
-    The Pro version might be a solution.
+-   ⚠️ Performance is a problem when handling large files, because the whole file is parsed in the browser. Files above
+    20 MB aren't opened.
 
 -   ⚠️ Strange behaviour with the spreadsheet's horizontal scrollbar when using Mozilla Firefox. This seems unrelated to
     this widget's logic as per this
@@ -75,7 +85,7 @@ data directly from your Mendix web app. Current features include:
 
 -   ⚠️ Chart limitations: charts are view-only (drag, resize and chart editing aren't available), data labels,
     trendlines and secondary axes aren't drawn, and 3D charts are drawn flat. Charts stay where they were anchored when
-    rows or columns are inserted above them. Saving to formats other than .xlsx/.xlsm drops charts.
+    rows or columns are inserted above them. Downloading in formats other than .xlsx/.xlsm drops charts.
 
 -   ⚠️ The toolbar's percent, date and time formats only change how a value is shown (x-spreadsheet adds text around
     it), so they aren't saved as Excel number formats. Number and currency formats are.

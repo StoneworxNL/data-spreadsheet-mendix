@@ -10,7 +10,10 @@
     xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd"
 >
     <name>XSpreadsheet</name>
-    <description>A web-based spreadsheet (https://github.com/myliang/x-spreadsheet).</description>
+    <description>View and edit Excel files from a file document, with their styling and charts.</description>
+    <studioProCategory>Display</studioProCategory>
+    <studioCategory>Display</studioCategory>
+    <helpUrl>https://github.com/StoneworxNL/data-spreadsheet-mendix#readme</helpUrl>
     <icon />
     <properties>
         <propertyGroup caption="General">
@@ -60,7 +63,10 @@
             </property>
             <property key="bookTypeEnum" type="enumeration" defaultValue="xlsx">
                 <caption>Book Type</caption>
-                <description>File format used by Save and Download. The file name's extension follows it.</description>
+                <description>
+                    File format for Download; the file name's extension follows it. Save always keeps the format of the
+                    loaded file.
+                </description>
                 <enumerationValues>
                     <enumerationValue key="xlsx">xlsx</enumerationValue>
                     <enumerationValue key="xlsm">xlsm</enumerationValue>

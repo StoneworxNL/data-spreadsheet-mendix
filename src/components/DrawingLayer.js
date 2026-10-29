@@ -1,10 +1,48 @@
 import * as XLSX from "xlsx";
-import { Chart, registerables } from "chart.js";
+import {
+    ArcElement,
+    BarController,
+    BarElement,
+    CategoryScale,
+    Chart,
+    DoughnutController,
+    Filler,
+    Legend,
+    LineController,
+    LineElement,
+    LinearScale,
+    PieController,
+    PointElement,
+    RadarController,
+    RadialLinearScale,
+    ScatterController,
+    Title,
+    Tooltip
+} from "chart.js";
 import cell from "x-data-spreadsheet/src/core/cell";
 import { formulam } from "x-data-spreadsheet/src/core/formula";
 import { EMU_PER_PIXEL, accentColors } from "../external/ooxml.js";
 
-Chart.register(...registerables);
+// Only what the chart types read from Excel need, to keep the bundle small
+Chart.register(
+    ArcElement,
+    BarController,
+    BarElement,
+    CategoryScale,
+    DoughnutController,
+    Filler,
+    Legend,
+    LineController,
+    LineElement,
+    LinearScale,
+    PieController,
+    PointElement,
+    RadarController,
+    RadialLinearScale,
+    ScatterController,
+    Title,
+    Tooltip
+);
 
 const LEGEND_POSITIONS = { r: "right", l: "left", t: "top", b: "bottom", tr: "right" };
 const IMAGE_TYPES = {

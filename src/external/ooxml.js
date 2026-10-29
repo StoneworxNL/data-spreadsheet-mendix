@@ -115,6 +115,21 @@ const PRESET_COLORS = { black: "000000", white: "FFFFFF", red: "FF0000", green: 
 const HORIZONTAL_ALIGN = { left: "left", center: "center", centerContinuous: "center", right: "right" };
 const VERTICAL_ALIGN = { top: "top", center: "middle", bottom: "bottom" };
 
+// Font names end up in x-spreadsheet's toolbar (set as HTML) and in CSS font rules, so only plain names are accepted
+const SAFE_FONT_NAME = /^[A-Za-z0-9 .,-]{1,64}$/;
+const DEFAULT_FONT_NAME = "Calibri";
+
+export function safeFontName(name) {
+    return typeof name === "string" && SAFE_FONT_NAME.test(name.trim()) ? name.trim() : DEFAULT_FONT_NAME;
+}
+
+// Pictures are shown through blob: URLs on the app's origin. Only raster formats: an SVG opened in its own tab could
+// run script. Excel always stores a PNG next to an SVG picture.
+const RASTER_IMAGE_TYPES = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
+
+// Columns beyond this are never shown; <col max="16384"> ("all remaining columns") would otherwise cost 16k steps
+const MAX_COLUMNS = 1024;
+
 // One EMU is 1/914400 inch; at 96 dpi that's 9525 EMU per pixel
 export const EMU_PER_PIXEL = 9525;
 const PIXELS_PER_POINT = 96 / 72;
@@ -197,8 +212,8 @@ function readSheet(xml, styles) {
     }
 
     descendants(xml, "col").forEach(col => {
-        const min = numberAttr(col, "min", 1) - 1;
-        const max = Math.min(numberAttr(col, "max", min + 1) - 1, min + 16383);
+        const min = Math.max(numberAttr(col, "min", 1) - 1, 0);
+        const max = Math.min(numberAttr(col, "max", min + 1) - 1, MAX_COLUMNS - 1);
         const hidden = boolAttr(col, "hidden");
         const width = col.hasAttribute("width") ? charsToPixels(numberAttr(col, "width", 0)) : null;
         for (let c = min; c <= max; c++) {
@@ -300,7 +315,7 @@ function readFont(font, theme) {
     };
     const underline = children(font, "u")[0];
     return {
-        name: val("name") || "Calibri",
+        name: safeFontName(val("name")),
         size: Number(val("sz")) || 11,
         bold: flag("b"),
         italic: flag("i"),
@@ -519,7 +534,8 @@ function readSheetDrawing(pkg, sheetXml, sheetPath, theme) {
         const blip = descendants(anchor, "blip")[0];
         if (blip) {
             const imageRel = drawingRels[attrNS(blip, NS_REL, "embed")];
-            const content = imageRel ? pkg.bytes(imageRel.path) : null;
+            const extension = imageRel ? imageRel.path.slice(imageRel.path.lastIndexOf(".") + 1).toLowerCase() : "";
+            const content = RASTER_IMAGE_TYPES.includes(extension) ? pkg.bytes(imageRel.path) : null;
             if (content) objects.push({ kind: "picture", anchor: position, path: imageRel.path, content });
         }
     });

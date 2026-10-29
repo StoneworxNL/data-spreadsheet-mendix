@@ -9,3 +9,15 @@ describe("fileNameFor", () => {
         expect(fileNameFor("Data.csv", "unknown")).toBe("Data.xlsx");
     });
 });
+
+describe("bookTypeOf", () => {
+    const { bookTypeOf } = require("../CustomExportToolbar");
+    it("saves in the format the file was loaded in", () => {
+        expect(bookTypeOf("Report.xlsx")).toBe("xlsx");
+        expect(bookTypeOf("Macros.XLSM")).toBe("xlsm");
+        expect(bookTypeOf("Old.xls")).toBe("biff8");
+        expect(bookTypeOf("Data.csv")).toBe("csv");
+        expect(bookTypeOf("Sheet.ods")).toBe("ods");
+        expect(bookTypeOf("NoExtension")).toBe("xlsx");
+    });
+});

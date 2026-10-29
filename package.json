@@ -1,12 +1,12 @@
 {
     "name": "xspreadsheet",
     "widgetName": "XSpreadsheet",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "description": "A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).",
-    "copyright": "© Mendix Technology BV 2022. All rights reserved.",
-    "author": "João Lopes",
+    "copyright": "© Stoneworx 2026. All rights reserved.",
+    "author": "Stoneworx",
     "engines": {
-        "node": ">=16"
+        "node": ">=22.18.0"
     },
     "license": "MIT",
     "config": {
@@ -31,7 +31,7 @@
     "dependencies": {
         "chart.js": "^4.6.1",
         "classnames": "^2.5.1",
-        "x-data-spreadsheet": "^1.1.9",
+        "x-data-spreadsheet": "1.1.9",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
         "xlsx-js-style": "^1.2.0"
     },

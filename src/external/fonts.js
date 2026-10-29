@@ -1,13 +1,22 @@
 /*
  * The grid draws on a canvas using each cell's font name. Office fonts (Aptos, Calibri, Cambria, ...) are missing on
- * many machines, and the canvas then falls back to a default font of a different size. Declaring every workbook font
- * as a @font-face made of local fonts keeps its name (as shown in the toolbar and saved to the file) while drawing
- * it with the closest installed font.
+ * many machines, and the canvas then falls back to a default font of a different size. Registering every workbook font
+ * as a FontFace made of local fonts keeps its name (as shown in the toolbar and saved to the file) while drawing it
+ * with the closest installed font. The FontFace API is used instead of a stylesheet, so no CSS is parsed, and only
+ * plain font names (see safeFontName) are registered.
  */
+import { safeFontName } from "./ooxml.js";
 
 const SANS = ["Calibri", "Carlito", "Aptos", "Segoe UI", "Helvetica Neue", "Arial", "Liberation Sans"];
 const SERIF = ["Cambria", "Caladea", "Georgia", "Times New Roman", "Liberation Serif"];
 const MONO = ["Consolas", "Menlo", "Courier New", "Liberation Mono"];
+
+const VARIANTS = [
+    { weight: "normal", style: "normal", suffix: "" },
+    { weight: "bold", style: "normal", suffix: "Bold" },
+    { weight: "normal", style: "italic", suffix: "Italic" },
+    { weight: "bold", style: "italic", suffix: "Bold Italic" }
+];
 
 const registered = new Set();
 
@@ -18,42 +27,28 @@ const registered = new Set();
  * @returns {Promise<boolean>} true when new fonts were registered, so the grid should be drawn again
  */
 export function registerFontFallbacks(names) {
-    if (typeof document === "undefined" || !document.fonts) return Promise.resolve(false);
-    const added = names.filter(name => name && !registered.has(name.toLowerCase()));
+    if (typeof document === "undefined" || !document.fonts || typeof FontFace === "undefined") {
+        return Promise.resolve(false);
+    }
+    const added = names
+        .filter(name => name && safeFontName(name) === name)
+        .filter(name => !registered.has(name.toLowerCase()));
     if (!added.length) return Promise.resolve(false);
 
-    const rules = added.map(name => {
+    const loads = [];
+    added.forEach(name => {
         registered.add(name.toLowerCase());
         const fallbacks = [name, ...familyOf(name)].filter((v, i, list) => list.indexOf(v) === i);
-        const family = name.replace(/"/g, "");
-        const src = fallbacks.map(font => `local("${font.replace(/"/g, "")}")`).join(", ");
-        return ["normal", "bold"]
-            .map(weight =>
-                ["normal", "italic"]
-                    .map(
-                        style =>
-                            `@font-face { font-family: "${family}"; font-weight: ${weight}; font-style: ${style}; ` +
-                            `src: ${weightedSources(fallbacks, weight, style) || src}; }`
-                    )
-                    .join("\n")
-            )
-            .join("\n");
+        VARIANTS.forEach(({ weight, style, suffix }) => {
+            const face = new FontFace(name, sources(fallbacks, suffix), { weight, style });
+            document.fonts.add(face);
+            loads.push(face.load().catch(() => null));
+        });
     });
-
-    const styleEl = document.createElement("style");
-    styleEl.setAttribute("data-xspreadsheet-fonts", "");
-    styleEl.textContent = rules.join("\n");
-    document.head.appendChild(styleEl);
-
-    const loads = added.flatMap(name =>
-        ["", "bold ", "italic ", "italic bold "].map(variant =>
-            document.fonts.load(`${variant}11pt "${name.replace(/"/g, "")}"`).catch(() => null)
-        )
-    );
     return Promise.all(loads).then(() => true);
 }
 
-function familyOf(name) {
+export function familyOf(name) {
     // Condensed faces (Aptos Narrow, Excel's default since 2023) need a condensed fallback, or text overflows its cell
     if (/narrow|condensed/i.test(name)) return ["Arial Narrow", "Liberation Sans Narrow", ...SANS];
     if (/consolas|courier|mono|menlo|code/i.test(name)) return MONO;
@@ -62,10 +57,7 @@ function familyOf(name) {
 }
 
 // local() matches full font face names, so bold/italic faces are looked up as "Calibri Bold", "Arial Italic", ...
-function weightedSources(fallbacks, weight, style) {
-    const suffix = [weight === "bold" ? "Bold" : "", style === "italic" ? "Italic" : ""].filter(Boolean).join(" ");
-    if (!suffix) return null;
-    return [...fallbacks.map(font => `local("${font} ${suffix}")`), ...fallbacks.map(font => `local("${font}")`)].join(
-        ", "
-    );
+export function sources(fallbacks, suffix) {
+    const names = suffix ? [...fallbacks.map(font => `${font} ${suffix}`), ...fallbacks] : fallbacks;
+    return names.map(font => `local("${font}")`).join(", ");
 }

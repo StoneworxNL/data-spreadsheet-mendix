@@ -1,100 +1,72 @@
-/**
- * @typedef Property
- * @type {object}
- * @property {string} key
- * @property {string} caption
- * @property {string} description
- * @property {string[]} objectHeaders
- * @property {ObjectProperties[]} objects
- * @property {Properties[]} properties
- */
+import { hidePropertiesIn } from "@mendix/pluggable-widgets-tools";
 
 /**
- * @typedef ObjectProperties
- * @type {object}
- * @property {PropertyGroup[]} properties
- * @property {string[]} captions
- */
-
-/**
- * @typedef PropertyGroup
- * @type {object}
- * @property {string} caption
- * @property {PropertyGroup[]} propertyGroups
- * @property {Property[]} properties
- */
-
-/**
- * @typedef Properties
- * @type {PropertyGroup}
- */
-
-/**
- * @typedef Problem
- * @type {object}
- * @property {string} property
- * @property {("error" | "warning" | "deprecation")} severity
- * @property {string} message
- * @property {string} studioMessage
- * @property {string} url
- * @property {string} studioUrl
- */
-
-/**
+ * Studio Pro configuration: hides settings that don't apply and warns about combinations that don't work.
+ *
  * @param {object} values
- * @param {Properties} defaultProperties
- * @param {("web"|"desktop")} target
- * @returns {Properties}
+ * @param {object} defaultProperties
+ * @returns {object}
  */
-export function getProperties(values, defaultProperties, target) {
-    // Do the values manipulation here to control the visibility of properties in Studio and Studio Pro conditionally.
-    /* Example
-    if (values.myProperty === "custom") {
-        delete defaultProperties.properties.myOtherProperty;
-    }
-    */
+export function getProperties(values, defaultProperties) {
+    const hide = keys => hidePropertiesIn(defaultProperties, values, keys);
+
+    // Deprecated: files are always generated as binary data
+    hide(["typeEnum"]);
+
+    const saves = values.editable && values.isShowSave;
+    if (!saves) hide(["afterSaveAction"]);
+    if (!saves && !values.isShowDownload) hide(["bookTypeEnum", "compression", "bookSST", "cellStyles"]);
     return defaultProperties;
 }
 
-// /**
-//  * @param {Object} values 
-//  * @returns {Problem[]} returns a list of problems.
-//  */
-// export function check(values) {
-//    /** @type {Problem[]} */
-//    const errors = [];
-//    // Add errors to the above array to throw errors in Studio and Studio Pro.
-//    /* Example
-//    if (values.myProperty !== "custom") {
-//        errors.push({
-//            property: `myProperty`,
-//            message: `The value of 'myProperty' is different of 'custom'.`,
-//            url: "https://github.com/myrepo/mywidget"
-//        });
-//    }
-//    */
-//    return errors;
-// }
+/**
+ * @param {object} values
+ * @returns {Array<{ property: string, message: string, severity?: string }>}
+ */
+export function check(values) {
+    const problems = [];
+    if (values.isShowSave && !values.editable) {
+        problems.push({
+            property: "isShowSave",
+            severity: "warning",
+            message: "The Save button only shows when Editable is on."
+        });
+    }
+    if (values.height < 0) {
+        problems.push({ property: "height", message: "Height can't be negative. Use 0 for the CSS or window height." });
+    }
+    return problems;
+}
 
-// /**
-//  * @param {object} values 
-//  * @param {boolean} isDarkMode 
-//  * @param {number[]} version
-//  * @returns {object}
-//  */
-// export function getPreview(values, isDarkMode, version) {
-//     // Customize your pluggable widget appearance for Studio Pro.
-//     return {
-//         type: "Container",
-//         children: []
-//     };
-// }
-
-// /**
-//  * @param {Object} values
-//  * @param {("web"|"desktop")} platform
-//  * @returns {string}
-//  */
-// export function getCustomCaption(values, platform) {
-//     return "XSpreadsheet";
-// }
+/**
+ * Design-mode preview: a small grid with the widget's settings.
+ *
+ * @param {object} values
+ * @returns {object}
+ */
+export function getPreview(values) {
+    const cell = (text, bold) => ({
+        type: "Container",
+        borders: true,
+        borderWidth: 1,
+        padding: 4,
+        children: [{ type: "Text", content: text, fontSize: 8, bold: Boolean(bold) }]
+    });
+    const row = (cells, bold) => ({ type: "RowLayout", columnSize: "grow", children: cells.map(c => cell(c, bold)) });
+    const mode = values.editable ? "Editable" : "View only";
+    const buttons = [values.editable && values.isShowSave ? "Save" : null, values.isShowDownload ? "Download" : null]
+        .filter(Boolean)
+        .join(" · ");
+    return {
+        type: "Container",
+        borders: true,
+        padding: 8,
+        children: [
+            { type: "Text", content: `Data Spreadsheet: ${mode}${buttons ? ` · ${buttons}` : ""}`, bold: true },
+            row(["", "A", "B", "C", "D"], true),
+            row(["1", "", "", "", ""]),
+            row(["2", "", "", "", ""]),
+            row(["3", "", "", "", ""])
+        ]
+    };
+}

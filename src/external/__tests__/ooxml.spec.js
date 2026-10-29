@@ -202,3 +202,108 @@ describe("toolbar number formats", () => {
         expect(wb.Sheets.S.A1).toEqual(expect.objectContaining({ t: "n", v: 1250, z: '"€"#,##0.00' }));
     });
 });
+
+describe("untrusted files", () => {
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+
+    // Changes parts of an Excel-made fixture, as an attacker could
+    function tampered(name, edit) {
+        const zip = XLSX.CFB.read(fixture(name), { type: "array" });
+        const text = path => decoder.decode(XLSX.CFB.find(zip, "/" + path).content);
+        const write = (path, content) => {
+            const entry = XLSX.CFB.find(zip, "/" + path);
+            const data = typeof content === "string" ? encoder.encode(content) : content;
+            if (entry) {
+                entry.content = data;
+                entry.size = data.length;
+            } else {
+                XLSX.CFB.utils.cfb_add(zip, "/" + path, data);
+            }
+        };
+        edit(text, write);
+        return new Uint8Array(XLSX.CFB.write(zip, { fileType: "zip", type: "array" }));
+    }
+
+    it("never uses a font name that could be HTML or CSS", () => {
+        const payloads = [
+            "&lt;img src=x onerror=alert(1)&gt;",
+            "Calibri&quot;); } body { display: none } /*",
+            "Calibri&#10;x"
+        ];
+        payloads.forEach(payload => {
+            const bytes = tampered("project-plan.xlsx", (text, write) =>
+                write(
+                    "xl/styles.xml",
+                    text("xl/styles.xml").replace(/<name val="Georgia"\/>/, `<name val="${payload}"/>`)
+                )
+            );
+            const layout = readLayout(openPackage(bytes));
+            expect(layout.fontNames).not.toContain(expect.stringMatching(/[<>"\\{};\n]/));
+            const data = stox(XLSX.read(bytes, { type: "array" }), { layout });
+            expect(styleAt(data[0], 0, 0).font.name).toBe("Calibri");
+        });
+    });
+
+    it("keeps plain font names", () => {
+        const { safeFontName } = require("../ooxml");
+        expect(safeFontName("Aptos Narrow")).toBe("Aptos Narrow");
+        expect(safeFontName("Segoe UI, sans-serif")).toBe("Segoe UI, sans-serif");
+        expect(safeFontName("<b>")).toBe("Calibri");
+        expect(safeFontName(null)).toBe("Calibri");
+    });
+
+    function withPicture(fileName, content) {
+        const bytes = tampered("sales-report.xlsx", (text, write) => {
+            write("xl/media/" + fileName, content);
+            write(
+                "xl/drawings/_rels/drawing1.xml.rels",
+                text("xl/drawings/_rels/drawing1.xml.rels").replace(
+                    "</Relationships>",
+                    '<Relationship Id="rIdSvg" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/' +
+                        fileName +
+                        '"/></Relationships>'
+                )
+            );
+            write(
+                "xl/drawings/drawing1.xml",
+                text("xl/drawings/drawing1.xml").replace(
+                    "</xdr:wsDr>",
+                    '<xdr:oneCellAnchor><xdr:from><xdr:col>8</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="952500" cy="952500"/><xdr:pic><xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rIdSvg"/></xdr:blipFill></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>'
+                )
+            );
+        });
+        return readLayout(openPackage(bytes)).sheets[0].drawing.objects.map(o => o.kind);
+    }
+
+    it("doesn't show SVG pictures", () => {
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
+        expect(withPicture("image1.svg", svg)).toEqual(["chart", "chart"]);
+        // A raster picture in the same place is shown
+        expect(withPicture("image1.png", new Uint8Array([137, 80, 78, 71]))).toEqual(["chart", "chart", "picture"]);
+    });
+
+    it("limits column ranges to the columns that can be shown", () => {
+        const bytes = tampered("project-plan.xlsx", (text, write) =>
+            write(
+                "xl/worksheets/sheet1.xml",
+                text("xl/worksheets/sheet1.xml").replace(
+                    /<cols>/,
+                    '<cols><col min="20" max="16384" width="5" customWidth="1"/>'
+                )
+            )
+        );
+        const layout = readLayout(openPackage(bytes));
+        expect(Object.keys(layout.sheets[0].cols).length).toBeLessThanOrEqual(1024);
+    });
+});
+
+describe("fonts", () => {
+    const { sources, familyOf } = require("../fonts");
+    it("builds local() sources with condensed fallbacks", () => {
+        expect(familyOf("Aptos Narrow")[0]).toBe("Arial Narrow");
+        expect(sources(["Calibri", "Arial"], "Bold")).toBe(
+            'local("Calibri Bold"), local("Arial Bold"), local("Calibri"), local("Arial")'
+        );
+    });
+});
