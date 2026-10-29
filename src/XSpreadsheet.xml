@@ -13,7 +13,7 @@
     <description>View and edit Excel files from a file document, with their styling and charts.</description>
     <studioProCategory>Display</studioProCategory>
     <studioCategory>Display</studioCategory>
-    <helpUrl>https://github.com/StoneworxNL/data-spreadsheet-mendix#readme</helpUrl>
+    <helpUrl>https://github.com/StoneworxNL/data-spreadsheet-mendix/blob/main/README.md</helpUrl>
     <icon />
     <properties>
         <propertyGroup caption="General">
