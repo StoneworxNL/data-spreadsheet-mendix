@@ -77,6 +77,9 @@ data directly from your Mendix web app. Current features include:
     trendlines and secondary axes aren't drawn, and 3D charts are drawn flat. Charts stay where they were anchored when
     rows or columns are inserted above them. Saving to formats other than .xlsx/.xlsm drops charts.
 
+-   ⚠️ The toolbar's percent, date and time formats only change how a value is shown (x-spreadsheet adds text around
+    it), so they aren't saved as Excel number formats. Number and currency formats are.
+
 -   ⚠️ Formulas that x-spreadsheet can't calculate the way Excel does (e.g. VLOOKUP, ROUND, or a division whose result
     differs from Excel's) keep showing the value Excel saved until the file is opened in Excel again.
 
