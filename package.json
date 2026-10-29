@@ -26,14 +26,15 @@
         "release": "pluggable-widgets-tools release:web"
     },
     "devDependencies": {
-        "@mendix/pluggable-widgets-tools": "^11.15.0"
+        "@mendix/pluggable-widgets-tools": "^11.15.0",
+        "jest-canvas-mock": "^2.5.8"
     },
     "dependencies": {
         "chart.js": "^4.6.1",
         "classnames": "^2.5.1",
+        "fast-formula-parser": "^1.0.19",
         "x-data-spreadsheet": "1.1.9",
-        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-        "xlsx-js-style": "^1.2.0"
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
     },
     "resolutions": {
         "react": "19.0.0",

@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
-import * as XLSXStyle from "xlsx-js-style";
 import { xtos } from "./xlsxspread.js";
 import { descendants, openPackage, parseXml, readRels, relsPathFor } from "./ooxml.js";
+import { writeCellStyles } from "./styleWriter.js";
 
 const REL_DRAWING = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing";
 const ZIP_BOOK_TYPES = ["xlsx", "xlsm"];
@@ -24,8 +24,8 @@ const encoder = new TextEncoder();
 /**
  * Builds the file for the current grid content.
  *
- * Styles are written with xlsx-js-style. For .xlsx/.xlsm, the charts and pictures of the loaded file are copied
- * back into the new package (SheetJS can't write them) and frozen panes are restored.
+ * For .xlsx/.xlsm, cell styles (styleWriter.js), frozen panes and the charts and pictures of the loaded file are
+ * added to the package SheetJS writes, since the community SheetJS build writes none of them.
  *
  * @param {Object} params
  * @param {Object[]} params.sheets `[{ data, original }]`: x-spreadsheet sheet data and the index of the sheet it was
@@ -47,9 +47,14 @@ export function exportWorkbook({ sheets, source = null, options = {}, defaultSty
     const vba = bookType === "xlsm" && source && source.pkg ? source.pkg.bytes("xl/vbaProject.bin") : null;
     if (vba) wb.vbaraw = vba;
 
-    let bytes = new Uint8Array(XLSXStyle.write(wb, { ...options, bookType, bookVBA: Boolean(vba), type: "array" }));
+    // sheetStubs keeps empty cells that only carry a style (a fill or border)
+    const writeOptions = { ...options, bookType, bookVBA: Boolean(vba), sheetStubs: true, type: "array" };
+    let bytes = new Uint8Array(XLSX.write(wb, writeOptions));
     if (ZIP_BOOK_TYPES.includes(bookType)) {
+        const font = defaultStyle && defaultStyle.font;
         bytes = finishPackage(bytes, {
+            worksheets: wb.SheetNames.map(name => wb.Sheets[name]),
+            defaultFont: font && font.name ? { name: font.name, sz: font.size || 11 } : undefined,
             sheets: sheets.map((sheet, i) => ({
                 original: sheet.original,
                 name: wb.SheetNames[i],
@@ -73,7 +78,7 @@ function convert(bytes, type) {
  * Post-processes a package written by SheetJS: restores frozen panes and re-attaches the original drawings
  * (charts and pictures) to the sheets they came from. Chart references to renamed sheets are updated.
  */
-export function finishPackage(bytes, { sheets, source, compression = true }) {
+export function finishPackage(bytes, { sheets, source, worksheets = [], defaultFont, compression = true }) {
     const out = openPackage(bytes);
     if (!out) return bytes;
 
@@ -82,6 +87,12 @@ export function finishPackage(bytes, { sheets, source, compression = true }) {
     const sheetPaths = workbookSheetPaths(out);
     let types = out.text("[Content_Types].xml");
     let changed = false;
+
+    const styled = writeCellStyles(out, { sheets: worksheets, sheetPaths, defaultFont });
+    if (styled) {
+        Object.keys(styled).forEach(path => writeEntry(out.zip, path, encoder.encode(styled[path])));
+        changed = true;
+    }
 
     const renames = {};
     sheets.forEach(sheet => {
@@ -106,6 +117,9 @@ export function finishPackage(bytes, { sheets, source, compression = true }) {
             drawing.parts.forEach(part => {
                 let content = original.bytes(part);
                 if (!content) return;
+                if (part === drawing.path && drawing.objects.some(o => o.anchor.moved)) {
+                    content = encoder.encode(writeAnchors(original.text(part), drawing.objects));
+                }
                 if (/^xl\/charts\/[^/]+\.xml$/.test(part) && Object.keys(renames).length) {
                     content = encoder.encode(renameSheetRefs(original.text(part), renames));
                 }
@@ -223,6 +237,26 @@ function addFrozenPane(xml, freeze) {
         /(<sheetData[\s>])/,
         `<sheetViews><sheetView workbookViewId="0">${pane}</sheetView></sheetViews>$1`
     );
+}
+
+// Puts anchors moved by row/column inserts and deletes back into the drawing part
+export function writeAnchors(xml, objects) {
+    const doc = parseXml(xml);
+    if (!doc) return xml;
+    const anchors = Array.from(doc.documentElement.children);
+    objects.forEach(({ anchor }) => {
+        const el = anchor.moved && anchors[anchor.index];
+        if (!el) return;
+        ["from", "to"].forEach(name => {
+            const marker = anchor[name];
+            const markerEl = marker && Array.from(el.children).find(c => c.localName === name);
+            if (!markerEl) return;
+            Array.from(markerEl.children).forEach(c => {
+                if (c.localName in marker) c.textContent = String(Math.round(marker[c.localName]));
+            });
+        });
+    });
+    return new XMLSerializer().serializeToString(doc);
 }
 
 // Rewrites sheet names in chart formulas (<c:f>) after sheets were renamed in the grid

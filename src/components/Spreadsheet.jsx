@@ -61,8 +61,11 @@ export function MendixSpreadsheet({
     isShowSave,
     isShowDownload,
     afterSaveAction,
+    saveMethod,
     widthOffset,
     height,
+    saveCaption,
+    downloadCaption,
     className,
     style
 }) {
@@ -140,13 +143,13 @@ export function MendixSpreadsheet({
                 })
         );
 
-        const uninstallRenderPatches = installRenderPatches(s);
+        const { engine, uninstall: uninstallRenderPatches } = installRenderPatches(s);
         const data = stox(workbook, { ...(editable && EDIT_MODE_SPARE), layout });
         s.loadData(data);
 
         // Which loaded sheet each grid sheet came from, so charts and saved drawings follow renamed/moved sheets
         const originals = new Map(s.datas.map((d, i) => [d, i]));
-        const drawings = layout ? new DrawingLayer(s, layout, originals) : null;
+        const drawings = layout ? new DrawingLayer(s, layout, originals, engine) : null;
         if (layout) {
             registerFontFallbacks(layout.fontNames).then(added => added && s.reRender());
         }
@@ -249,6 +252,9 @@ export function MendixSpreadsheet({
                 isShowSave={isShowSave && editable}
                 isShowDownload={isShowDownload}
                 afterSaveAction={afterSaveAction}
+                saveMethod={saveMethod}
+                saveCaption={saveCaption}
+                downloadCaption={downloadCaption}
                 onSaveStart={markOwnSave}
                 onSaveFailed={clearOwnSave}
             />

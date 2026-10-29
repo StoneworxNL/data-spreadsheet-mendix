@@ -12,8 +12,11 @@ export function XSpreadsheet({
     isShowSave,
     isShowDownload,
     afterSaveAction,
+    saveMethod,
     widthOffset,
     height,
+    saveCaption,
+    downloadCaption,
     class: className,
     style
 }) {
@@ -29,8 +32,11 @@ export function XSpreadsheet({
             isShowSave={isShowSave}
             isShowDownload={isShowDownload}
             afterSaveAction={afterSaveAction}
+            saveMethod={saveMethod}
             widthOffset={widthOffset}
             height={height}
+            saveCaption={saveCaption && saveCaption.value}
+            downloadCaption={downloadCaption && downloadCaption.value}
             className={className}
             style={style}
         />

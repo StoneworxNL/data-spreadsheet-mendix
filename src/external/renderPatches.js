@@ -2,59 +2,47 @@
  * Small changes to how x-spreadsheet draws loaded workbooks, so they look like they do in Excel. They only apply
  * while the grid draws its canvas; editing, selection and saving see the cells unchanged.
  *
- * Formulas: x-spreadsheet calculates formulas itself, but only knows SUM, AVERAGE, MAX, MIN, IF, AND, OR and CONCAT,
- * can't read absolute references ($A$1), and reads other cells as their displayed text ("€ 1,250" isn't a number).
- * Loaded formulas therefore showed NaN or wrong results. Now loaded formulas show Excel's result, formatted with the
- * cell's number format; the cell still holds the formula, so the editor shows and saves it. Formulas the grid can
- * calculate correctly (checked once against Excel's saved result) are recalculated when the cells they use change.
- * New formulas read loaded cells as their underlying values.
+ * Formulas: every formula is calculated with FormulaEngine (fast-formula-parser) and shown formatted with its cell's
+ * number format, instead of by x-spreadsheet's own calculator (8 functions, reads cells as their shown text). The cell
+ * still holds the formula, so the editor shows and saves it. Loaded formulas the engine can't reproduce keep
+ * showing the result Excel saved.
  *
  * Text overflow: like Excel, left-aligned text that doesn't wrap runs on into empty cells to its right instead of
  * being cut off at its own cell border.
  */
 import * as XLSX from "xlsx";
-import cellFormula from "x-data-spreadsheet/src/core/cell";
-import { formulam } from "x-data-spreadsheet/src/core/formula";
+import { FormulaEngine } from "./formulaEngine.js";
 
 const PATCHED = "__xsRenderPatches";
+const ENGINE = "__xsFormulaEngine";
 const MAX_OVERFLOW_COLUMNS = 20;
-const MAX_FORMULA_DEPTH = 50;
 
 /**
  * @param {Object} spreadsheet The x-spreadsheet instance
- * @returns {Function} Removes the instance's render hook
+ * @returns {{ engine: FormulaEngine, uninstall: Function }} The formula engine (also used by the charts) and a
+ *     function that removes the instance's render hook
  */
 export function installRenderPatches(spreadsheet) {
     const proto = Object.getPrototypeOf(spreadsheet.sheet.data);
     if (!proto[PATCHED]) {
-        const { getCell, getCellTextOrDefault, cellRect } = proto;
+        const { getCell, cellRect } = proto;
+        proto[`${PATCHED}getCell`] = getCell;
 
         Object.assign(proto, {
-            // While the grid draws, loaded formula cells show their result instead of x-spreadsheet's calculation
+            // While the grid draws, formulas show their result, and typed numbers their cell's number format
             getCell(ri, ci) {
                 const cell = getCell.call(this, ri, ci);
-                if (!this[PATCHED] || !cell || !cell.source) return cell;
-                if (isUnedited(cell) && cell.source.display != null) {
-                    return { ...cell, text: formulaDisplay(this, cell, getCell) };
+                if (!this[PATCHED] || !cell) return cell;
+                const text = cell.text == null ? "" : String(cell.text);
+                if (text[0] === "=" && text.length > 1 && this[ENGINE]) {
+                    return { ...cell, text: formulaDisplay(this[ENGINE], this, ri, ci, cell) };
                 }
-                // A number typed into a formatted number cell is shown (and saved) in that cell's format
-                const loaded = cell.source.cell;
+                const loaded = cell.source && cell.source.cell;
                 if (loaded && loaded.t === "n" && loaded.z) {
-                    const formatted = formatTyped(cell.text, loaded.z);
+                    const formatted = formatTyped(text, loaded.z);
                     if (formatted !== null) return { ...cell, text: formatted };
                 }
                 return cell;
-            },
-
-            // Values that formulas read from loaded cells: the number behind "€ 1,250", or a loaded formula's result
-            getCellTextOrDefault(ri, ci) {
-                const cell = getCell.call(this, ri, ci);
-                if (isUnedited(cell) && cell.source.cell) {
-                    const value = loadedValue(this, cell, getCell, 0);
-                    if (typeof value === "number") return String(value);
-                    if (cell.source.display != null) return cell.source.display;
-                }
-                return getCellTextOrDefault.call(this, ri, ci);
             },
 
             cellRect(ri, ci) {
@@ -66,10 +54,21 @@ export function installRenderPatches(spreadsheet) {
         proto[PATCHED] = true;
     }
 
+    const storedCell = proto[`${PATCHED}getCell`];
+    const engine = new FormulaEngine(
+        () => spreadsheet.datas,
+        (data, ri, ci) => storedCell.call(data, ri, ci)
+    );
+
     const { table } = spreadsheet.sheet;
     const render = table.render;
     table.render = (...args) => {
         const { data } = table;
+        // Cells may have changed since the last draw
+        engine.reset();
+        spreadsheet.datas.forEach(d => {
+            d[ENGINE] = engine;
+        });
         data[PATCHED] = true;
         try {
             return render.apply(table, args);
@@ -77,8 +76,11 @@ export function installRenderPatches(spreadsheet) {
             data[PATCHED] = false;
         }
     };
-    return () => {
-        table.render = render;
+    return {
+        engine,
+        uninstall: () => {
+            table.render = render;
+        }
     };
 }
 
@@ -86,7 +88,7 @@ function isUnedited(cell) {
     return Boolean(cell && cell.source && cell.text === cell.source.text);
 }
 
-function formatTyped(text, format) {
+export function formatTyped(text, format) {
     if (typeof text !== "string" || !/^[+-]?(\d+\.?\d*|\.\d+)$/.test(text.trim())) return null;
     try {
         return XLSX.SSF.format(format, Number(text));
@@ -95,56 +97,21 @@ function formatTyped(text, format) {
     }
 }
 
-function formulaDisplay(data, cell, getCell) {
-    const { source } = cell;
-    if (!isLive(data, cell, getCell)) return source.display;
-    const value = loadedValue(data, cell, getCell, 0);
-    if (value === source.cell.v) return source.display;
-    if (typeof value !== "number") return String(value);
+function formulaDisplay(engine, data, ri, ci, cell) {
+    const unedited = isUnedited(cell) && cell.source.cell;
+    if (unedited && !engine.isTrusted(data, ri, ci, cell)) return cell.source.display;
+
+    const result = engine.evaluate(data, ri, ci, String(cell.text));
+    if (result.error) return unedited && result.unsupported ? cell.source.display : result.error;
+    const { value } = result;
+    if (unedited && value === cell.source.cell.v) return cell.source.display;
+    if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+    if (typeof value !== "number") return value == null ? "" : String(value);
+    const format = cell.source && cell.source.cell && cell.source.cell.z;
     try {
-        return XLSX.SSF.format(source.cell.z || "General", value);
+        return XLSX.SSF.format(format || "General", value);
     } catch (e) {
         return String(value);
-    }
-}
-
-// The value of an unedited loaded cell; formulas the grid can calculate are recalculated from the current cells
-function loadedValue(data, cell, getCell, depth) {
-    const { source } = cell;
-    if (source.display == null || depth > MAX_FORMULA_DEPTH || !isLive(data, cell, getCell)) return source.cell.v;
-    const result = calculate(data, source.text, getCell, depth);
-    return result === null ? source.cell.v : result;
-}
-
-// Whether x-spreadsheet calculates this formula like Excel: it must give Excel's saved result for the loaded data
-function isLive(data, cell, getCell) {
-    const { source } = cell;
-    if (source.live === undefined) {
-        source.live = false;
-        const expected = source.cell.v;
-        const result = typeof expected === "number" ? calculate(data, source.text, getCell, 0, true) : null;
-        source.live = result !== null && Math.abs(result - expected) <= 1e-9 * Math.max(1, Math.abs(expected));
-    }
-    return source.live;
-}
-
-// x-spreadsheet's calculation, reading loaded cells as values; null when it fails or isn't a number
-function calculate(data, formula, getCell, depth, savedValues = false) {
-    // x-spreadsheet doesn't understand absolute references; they mean the same for a single calculation
-    const text = formula.replace(/\$(?=[A-Z]+\$?\d)|(?<=[A-Z])\$(?=\d)/g, "");
-    const cellText = (ci, ri) => {
-        const ref = getCell.call(data, ri, ci);
-        if (isUnedited(ref) && ref.source.cell) {
-            const v = savedValues ? ref.source.cell.v : loadedValue(data, ref, getCell, depth + 1);
-            return typeof v === "number" ? String(v) : ref.source.display != null ? ref.source.display : ref.text;
-        }
-        return ref && ref.text ? ref.text : "";
-    };
-    try {
-        const result = Number(cellFormula.render(text, formulam, cellText));
-        return Number.isFinite(result) ? result : null;
-    } catch (e) {
-        return null;
     }
 }
 

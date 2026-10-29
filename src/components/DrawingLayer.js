@@ -19,8 +19,6 @@ import {
     Title,
     Tooltip
 } from "chart.js";
-import cell from "x-data-spreadsheet/src/core/cell";
-import { formulam } from "x-data-spreadsheet/src/core/formula";
 import { EMU_PER_PIXEL, accentColors } from "../external/ooxml.js";
 
 // Only what the chart types read from Excel need, to keep the bundle small
@@ -43,6 +41,9 @@ Chart.register(
     Title,
     Tooltip
 );
+
+// Property on x-spreadsheet sheet data that receives row/column inserts and deletes
+const SHIFT_HOOK = "__xsShiftHook";
 
 const LEGEND_POSITIONS = { r: "right", l: "left", t: "top", b: "bottom", tr: "right" };
 const IMAGE_TYPES = {
@@ -67,8 +68,9 @@ export class DrawingLayer {
      * @param {Object} layout From `readLayout` (ooxml.js)
      * @param {Map} originals x-spreadsheet sheet data (DataProxy) -> index of the sheet in the loaded file
      */
-    constructor(spreadsheet, layout, originals) {
+    constructor(spreadsheet, layout, originals, engine = null) {
         this.spreadsheet = spreadsheet;
+        this.engine = engine;
         this.layout = layout;
         this.originals = originals;
         this.colors = accentColors(layout.theme);
@@ -82,6 +84,11 @@ export class DrawingLayer {
         sheetEl.appendChild(this.fixedLayer);
         sheetEl.appendChild(this.scrollLayer);
 
+        // Objects move with inserted and deleted rows/columns, like in Excel
+        installShiftHook(spreadsheet.sheet.data);
+        this.onShift = (data, shift) => this.shiftAnchors(data, shift);
+        spreadsheet.datas.forEach(data => (data[SHIFT_HOOK] = this.onShift));
+
         // x-spreadsheet re-renders its canvas on every scroll, resize, edit and sheet switch
         const { table } = spreadsheet.sheet;
         this.table = table;
@@ -91,6 +98,28 @@ export class DrawingLayer {
             this.schedule();
             return result;
         };
+        this.schedule();
+    }
+
+    shiftAnchors(data, { type, index, count }) {
+        const original = this.originals.get(data);
+        const sheet = original !== undefined && this.layout.sheets[original];
+        if (!sheet || !sheet.drawing) return;
+        const key = type === "row" ? "row" : "col";
+        const offsetKey = type === "row" ? "rowOff" : "colOff";
+        sheet.drawing.objects.forEach(({ anchor }) => {
+            [anchor.from, anchor.to].forEach(marker => {
+                if (!marker || marker[key] < index) return;
+                if (count < 0 && marker[key] < index - count) {
+                    // Inside the deleted range: move to its start
+                    marker[key] = index;
+                    marker[offsetKey] = 0;
+                } else {
+                    marker[key] += count;
+                }
+                anchor.moved = true;
+            });
+        });
         this.schedule();
     }
 
@@ -108,6 +137,7 @@ export class DrawingLayer {
 
     update() {
         const data = this.spreadsheet.sheet.data;
+        if (!data[SHIFT_HOOK]) data[SHIFT_HOOK] = this.onShift;
         const original = this.originals.get(data);
         this.groups.forEach((group, index) => {
             group.items.forEach(item => (item.el.style.display = index === original ? "" : "none"));
@@ -160,6 +190,28 @@ export class DrawingLayer {
         const el = document.createElement("div");
         el.className = "xs-drawing xs-drawing-" + object.kind;
         this.scrollLayer.appendChild(el);
+        // Clicks reach the cell below, so a chart doesn't block selecting or editing it
+        ["mousedown", "dblclick", "contextmenu"].forEach(type =>
+            el.addEventListener(type, evt => {
+                if (evt.button === 2 && type === "mousedown") return;
+                evt.preventDefault();
+                this.spreadsheet.sheet.overlayerEl.el.dispatchEvent(
+                    new MouseEvent(type, {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: evt.clientX,
+                        clientY: evt.clientY,
+                        button: evt.button,
+                        buttons: evt.buttons,
+                        detail: evt.detail,
+                        shiftKey: evt.shiftKey,
+                        ctrlKey: evt.ctrlKey,
+                        metaKey: evt.metaKey
+                    })
+                );
+            })
+        );
+
         // Keep the grid scrollable with the mouse wheel while the pointer is over a chart
         el.addEventListener(
             "wheel",
@@ -214,7 +266,8 @@ export class DrawingLayer {
             const original = this.originals.get(data);
             if (original !== undefined) sheetsByName[this.layout.sheets[original].name.toLowerCase()] = data;
         });
-        return (ref, cache, numeric, visibleOnly) => resolveRef(ref, sheetsByName, cache, numeric, visibleOnly);
+        return (ref, cache, numeric, visibleOnly) =>
+            resolveRef(ref, sheetsByName, cache, numeric, visibleOnly, this.engine);
     }
 
     destroy() {
@@ -226,6 +279,29 @@ export class DrawingLayer {
         this.scrollLayer.remove();
         this.groups.clear();
     }
+}
+
+// Calls a sheet's shift hook after x-spreadsheet inserts or deletes rows/columns at the selection
+function installShiftHook(sampleData) {
+    const proto = Object.getPrototypeOf(sampleData);
+    if (proto[SHIFT_HOOK + "Installed"]) return;
+    const { insert, delete: remove } = proto;
+    Object.assign(proto, {
+        insert(type, n = 1) {
+            const { sri, sci } = this.selector.range;
+            const result = insert.call(this, type, n);
+            if (this[SHIFT_HOOK]) this[SHIFT_HOOK](this, { type, index: type === "row" ? sri : sci, count: n });
+            return result;
+        },
+        delete(type) {
+            const { sri, sci, eri, eci } = this.selector.range;
+            const result = remove.call(this, type);
+            const [start, end] = type === "row" ? [sri, eri] : [sci, eci];
+            if (this[SHIFT_HOOK]) this[SHIFT_HOOK](this, { type, index: start, count: -(end - start + 1) });
+            return result;
+        }
+    });
+    proto[SHIFT_HOOK + "Installed"] = true;
 }
 
 function createLayer(className) {
@@ -281,7 +357,7 @@ function anchorBox(anchor, cols, rows) {
  *
  * @returns {Array<string|number|null>}
  */
-export function resolveRef(ref, sheetsByName, cache = [], numeric = false, visibleOnly = false) {
+export function resolveRef(ref, sheetsByName, cache = [], numeric = false, visibleOnly = false, engine = null) {
     if (!ref) return cache.map(v => (numeric ? toNumber(v) : v));
     const parts = splitRef(ref.replace(/^\(|\)$/g, ""));
     const values = [];
@@ -295,7 +371,7 @@ export function resolveRef(ref, sheetsByName, cache = [], numeric = false, visib
         for (let r = range.s.r; r <= range.e.r; r++) {
             for (let c = range.s.c; c <= range.e.c; c++) {
                 if (visibleOnly && (data.rows.isHide(r) || data.cols.isHide(c))) continue;
-                values.push(cellValue(data, r, c, numeric));
+                values.push(cellValue(data, r, c, numeric, engine));
             }
         }
     }
@@ -319,17 +395,24 @@ function splitRef(ref) {
     return parts.map(p => p.trim()).filter(Boolean);
 }
 
-// A cell's value: the value from the file while the cell is unedited, otherwise what the grid shows for it
-function cellValue(data, r, c, numeric) {
+// A cell's value: numbers for chart values (formulas calculated by the grid's formula engine), the shown text for
+// categories (so dates keep their format)
+function cellValue(data, r, c, numeric, engine) {
     const gridCell = data.getCell(r, c);
     if (!gridCell) return null;
     const text = gridCell.text == null ? "" : String(gridCell.text);
     const source = gridCell.source;
-    if (source && source.text === text && source.cell) {
-        return numeric ? toNumber(source.cell.v) : text[0] === "=" ? String(source.cell.v) : text;
+    const unedited = source && source.text === text && source.cell;
+    if (numeric) {
+        if (engine) return toNumber(engine.cellValue(data, r, c));
+        return toNumber(unedited ? source.cell.v : text);
     }
-    const shown = text[0] === "=" ? cell.render(text, formulam, (x, y) => data.getCellTextOrDefault(y, x)) : text;
-    return numeric ? toNumber(shown) : String(shown);
+    if (text[0] !== "=") return text;
+    if (engine) {
+        const value = engine.cellValue(data, r, c);
+        return value == null ? "" : String(value);
+    }
+    return unedited ? String(source.cell.v) : text;
 }
 
 function toNumber(value) {
@@ -374,12 +457,22 @@ export function buildChartConfig(chart, resolve, colors) {
     const datasets = [];
     let seriesIndex = 0;
 
+    let hasSecondary = false;
+
     plots.forEach(plot => {
         plot.series.forEach(series => {
             const i = seriesIndex++;
             const color = series.color || palette(series.index != null ? series.index : i);
             const name = seriesName(series, i);
             const values = read(series.values, true);
+            const shown = series.labels || plot.labels;
+            const round = plot.type === "pie" || plot.type === "doughnut";
+            const axisKey = plot.horizontal ? "xAxisID" : "yAxisID";
+            const extra = {
+                xsLabels: shown && (shown.value || shown.percent || shown.category) ? shown : null,
+                ...(plot.secondary && !round && { [axisKey]: "y1" })
+            };
+            if (plot.secondary && !round) hasSecondary = true;
 
             if (plot.type === "scatter") {
                 const xs = read(series.categories, true);
@@ -391,8 +484,10 @@ export function buildChartConfig(chart, resolve, colors) {
                     borderColor: series.lineColor || color,
                     showLine: !series.noLine && /line|smooth/i.test(plot.scatterStyle || "") && !series.noLine,
                     tension: series.smooth ? 0.4 : 0,
-                    pointRadius: series.noMarker ? 0 : 4
+                    pointRadius: series.noMarker ? 0 : 4,
+                    ...extra
                 });
+                addTrendlines(datasets, series, datasets[datasets.length - 1], name, true);
                 return;
             }
 
@@ -407,7 +502,8 @@ export function buildChartConfig(chart, resolve, colors) {
                     data: values,
                     backgroundColor: values.map((v, k) => series.pointColors[k] || palette(k)),
                     borderColor: "#FFFFFF",
-                    borderWidth: 1
+                    borderWidth: 1,
+                    ...extra
                 });
                 return;
             }
@@ -436,15 +532,18 @@ export function buildChartConfig(chart, resolve, colors) {
                 stack:
                     plot.grouping === "stacked" || plot.grouping === "percentStacked"
                         ? "stack" + chart.plots.indexOf(plot)
-                        : undefined
+                        : undefined,
+                ...extra
             });
+            addTrendlines(datasets, series, datasets[datasets.length - 1], name, false);
         });
     });
 
     if (main.grouping === "percentStacked" && main.type !== "pie") {
         labels.forEach((label, k) => {
-            const total = datasets.reduce((sum, d) => sum + Math.abs(d.data[k] || 0), 0);
-            datasets.forEach(d => {
+            const series = datasets.filter(d => !d.xsTrend);
+            const total = series.reduce((sum, d) => sum + Math.abs(d.data[k] || 0), 0);
+            series.forEach(d => {
                 d.data[k] = total ? (d.data[k] || 0) / total : 0;
             });
         });
@@ -459,8 +558,8 @@ export function buildChartConfig(chart, resolve, colors) {
     if (
         !title &&
         !chart.autoTitleDeleted &&
-        (chart.hasTitleElement || datasets.length === 1) &&
-        datasets.length === 1
+        (chart.hasTitleElement || datasets.filter(d => !d.xsTrend).length === 1) &&
+        datasets.filter(d => !d.xsTrend).length === 1
     ) {
         title = datasets[0].label;
     }
@@ -487,11 +586,22 @@ export function buildChartConfig(chart, resolve, colors) {
         // Excel draws the first category of a horizontal bar chart at the bottom
         scales[horizontal ? "y" : "x"] = { ...axis(horizontal ? "l" : "b", false), reverse: horizontal };
         scales[horizontal ? "x" : "y"] = axis(horizontal ? "b" : "l", true);
+        if (hasSecondary) {
+            // Excel's secondary value axis, on the right (on top for horizontal bars)
+            scales.y1 = {
+                ...axis("r", true),
+                stacked: false,
+                axis: horizontal ? "x" : "y",
+                position: horizontal ? "top" : "right",
+                grid: { display: false }
+            };
+        }
     }
 
     const chartjs = {
         type,
         data: { labels: type === "scatter" ? undefined : labels, datasets },
+        plugins: [dataLabels(format, main.grouping === "percentStacked")],
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -529,6 +639,83 @@ export function buildChartConfig(chart, resolve, colors) {
     };
 
     return { chartjs, signature: JSON.stringify([title, labels, datasets.map(d => d.data)]) };
+}
+
+// Excel trendlines, drawn as dashed lines: linear (least squares) and moving average
+function addTrendlines(datasets, series, dataset, name, isScatter) {
+    (series.trendlines || []).forEach(trendline => {
+        const points = isScatter
+            ? dataset.data.map(p => [p.x, p.y])
+            : dataset.data.map((y, k) => [k, y]).filter(p => p[1] != null);
+        let line;
+        if (trendline.type === "movingAvg") {
+            const period = Math.max(2, trendline.period);
+            line = points.map((p, k) =>
+                k + 1 < period ? null : points.slice(k + 1 - period, k + 1).reduce((sum, q) => sum + q[1], 0) / period
+            );
+        } else {
+            // Linear; Excel's other types (exponential, polynomial, ...) are drawn as their linear fit
+            const n = points.length;
+            if (n < 2) return;
+            const sx = points.reduce((sum, p) => sum + p[0], 0);
+            const sy = points.reduce((sum, p) => sum + p[1], 0);
+            const sxx = points.reduce((sum, p) => sum + p[0] * p[0], 0);
+            const sxy = points.reduce((sum, p) => sum + p[0] * p[1], 0);
+            const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1);
+            const intercept = (sy - slope * sx) / n;
+            line = points.map(p => intercept + slope * p[0]);
+        }
+        const color = trendline.color || dataset.borderColor || "#595959";
+        datasets.push({
+            type: isScatter ? "scatter" : "line",
+            label: (trendline.type === "movingAvg" ? "Moving average" : "Linear") + " (" + name + ")",
+            data: isScatter ? points.map((p, k) => ({ x: p[0], y: line[k] })) : line,
+            showLine: true,
+            borderColor: color,
+            backgroundColor: color,
+            xsTrend: true,
+            borderDash: [6, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+            ...(dataset.yAxisID && { yAxisID: dataset.yAxisID }),
+            ...(dataset.xAxisID && { xAxisID: dataset.xAxisID })
+        });
+    });
+}
+
+// Data labels as Excel shows them (value, percentage, category), for datasets with xsLabels
+function dataLabels(format, percentStacked) {
+    return {
+        id: "xsDataLabels",
+        afterDatasetsDraw(chartInstance) {
+            const { ctx } = chartInstance;
+            chartInstance.data.datasets.forEach((dataset, d) => {
+                const shown = dataset.xsLabels;
+                const meta = chartInstance.getDatasetMeta(d);
+                if (!shown || meta.hidden) return;
+                const total = dataset.data.reduce((sum, v) => sum + (typeof v === "number" ? Math.abs(v) : 0), 0);
+                const round = meta.type === "pie" || meta.type === "doughnut";
+                ctx.save();
+                ctx.font = "11px Calibri, Carlito, Arial, sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = round ? "#FFFFFF" : "#404040";
+                meta.data.forEach((element, k) => {
+                    const raw = dataset.data[k];
+                    const value = raw && typeof raw === "object" ? raw.y : raw;
+                    if (value == null) return;
+                    const parts = [];
+                    if (shown.category && chartInstance.data.labels) parts.push(chartInstance.data.labels[k]);
+                    if (shown.value) parts.push(percentStacked ? Math.round(value * 100) + "%" : format(value));
+                    if (shown.percent && total) parts.push(Math.round((Math.abs(value) / total) * 100) + "%");
+                    const { x, y } = element.tooltipPosition();
+                    ctx.fillText(parts.join(round ? " " : ", "), x, round ? y : y - 10);
+                });
+                ctx.restore();
+            });
+        }
+    };
 }
 
 // Formats chart numbers with the series' Excel number format, when SheetJS can apply it

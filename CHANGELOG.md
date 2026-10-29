@@ -12,6 +12,11 @@ Requires Mendix 11 (Pluggable Widgets Tools 11, React 19).
     kept in saved .xlsx/.xlsm files.
 -   Height property; the widget follows its container and applies its class and style.
 -   Studio Pro: design-mode preview, checks, help link.
+-   Formula engine (fast-formula-parser): about 280 Excel functions, recalculated as you edit.
+-   Charts: data labels, secondary axes, trendlines; charts move with inserted and deleted rows and columns, and clicks
+    reach the cells below them.
+-   Save method setting: save through the file property (Mendix's file upload API).
+-   Translatable Save and Download captions.
 
 ### Changed
 
@@ -20,6 +25,7 @@ Requires Mendix 11 (Pluggable Widgets Tools 11, React 19).
 -   The widget reloads when the file or Editable changes and cleans up its listeners.
 -   `xlsx` 0.20.3 (fixes GHSA-4r6h-8v6p-xvw6 and GHSA-5pgg-2g8v-p4x9).
 -   The Type export option is deprecated.
+-   Styles are written by the widget itself; xlsx-js-style (a second SheetJS copy) is no longer bundled.
 
 ### Security
 

@@ -40,8 +40,11 @@ export function CustomExportToolbar({
     isShowSave,
     isShowDownload,
     afterSaveAction,
+    saveMethod,
     onSaveStart,
-    onSaveFailed
+    onSaveFailed,
+    saveCaption,
+    downloadCaption
 }) {
     // Download uses the widget's Book Type. Save keeps the format of the file that was loaded, so it never replaces
     // a workbook with, say, a single-sheet CSV.
@@ -65,31 +68,39 @@ export function CustomExportToolbar({
         setTimeout(() => URL.revokeObjectURL(url), 0);
     };
 
+    const runAfterSave = () => {
+        if (afterSaveAction && afterSaveAction.canExecute && !afterSaveAction.isExecuting) afterSaveAction.execute();
+    };
+
+    const saveFailed = error => {
+        if (onSaveFailed) onSaveFailed();
+        console.error(error);
+        if (window.mx && mx.ui && mx.ui.error) {
+            mx.ui.error(`The file could not be saved. ${error && error.message ? error.message : ""}`.trim());
+        }
+    };
+
     const handleSave = () => {
         if (!spreadsheet) return;
-        const fileBlob = createFile(bookTypeOf(file.value.name));
-        const guid = new URL(file.value.uri).searchParams.get("guid");
+        const format = bookTypeOf(file.value.name);
+        const fileBlob = createFile(format);
 
         // Before saving: the refreshed file document can reach the widget before the success callback runs
         if (onSaveStart) onSaveStart();
-        mx.data.saveDocument(
-            guid,
-            file.value.name,
-            {},
-            fileBlob,
-            () => {
-                if (afterSaveAction && afterSaveAction.canExecute && !afterSaveAction.isExecuting) {
-                    afterSaveAction.execute();
-                }
-            },
-            error => {
-                if (onSaveFailed) onSaveFailed();
-                console.error(error);
-                if (window.mx && mx.ui && mx.ui.error) {
-                    mx.ui.error(`The file could not be saved. ${error && error.message ? error.message : ""}`.trim());
-                }
+
+        // Through the file property: the app commits the object (in After Save Action)
+        if (saveMethod === "property" && typeof file.setValue === "function" && !file.readOnly) {
+            try {
+                file.setValue(new File([fileBlob], file.value.name, { type: FILE_TYPES[format][1] }));
+                runAfterSave();
+            } catch (error) {
+                saveFailed(error);
             }
-        );
+            return;
+        }
+
+        const guid = new URL(file.value.uri).searchParams.get("guid");
+        mx.data.saveDocument(guid, file.value.name, {}, fileBlob, runAfterSave, saveFailed);
     };
 
     const btnClassNames = "btn mx-button btn-default spacing-outer-bottom-medium";
@@ -98,12 +109,12 @@ export function CustomExportToolbar({
         <div>
             {isShowSave && (
                 <button type="button" className={btnClassNames} onClick={handleSave}>
-                    Save
+                    {saveCaption || "Save"}
                 </button>
             )}
             {isShowDownload && (
                 <button type="button" className={btnClassNames} onClick={handleDownload}>
-                    Download
+                    {downloadCaption || "Download"}
                 </button>
             )}
         </div>

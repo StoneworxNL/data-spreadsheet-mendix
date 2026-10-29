@@ -16,15 +16,15 @@ data directly from your Mendix web app. Current features include:
 
 -   Multiple sheets;
 
--   Cell formulas available. Loaded formulas show the result Excel saved; simple ones (SUM, AVERAGE, MIN, MAX, IF,
-    arithmetic) recalculate when you edit the cells they use;
+-   Formulas: about 280 Excel functions (with fast-formula-parser), absolute references and references to other sheets.
+    They recalculate as you edit; loaded formulas the engine can't reproduce keep the result Excel saved;
 
 -   Excel styling: fonts, font colours, fills, borders, alignment, wrapped text, column widths, row heights, hidden
     rows/columns and frozen panes. Styles are kept when you save or download;
 
--   Charts and pictures: column, bar, line, area, pie, doughnut, scatter and radar charts are drawn over the grid where
-    Excel placed them, follow scrolling, and update when you edit their data. They are kept when you save or download as
-    .xlsx/.xlsm;
+-   Charts and pictures: column, bar, line, area, pie, doughnut, scatter and radar charts, with data labels, secondary
+    axes and trendlines, are drawn over the grid where Excel placed them. They follow scrolling and inserted rows and
+    columns, and update when you edit their data. They are kept when you save or download as .xlsx/.xlsm;
 
 -   Custom toolbar;
 
@@ -34,6 +34,11 @@ data directly from your Mendix web app. Current features include:
 -   Height: a fixed height in pixels, a height set on the widget with CSS (its class or style), or the window height;
 
 -   Possibility to add an After Save activity, such as a nanoflow to show a success message;
+
+-   Save method: Direct (stores the file right away) or Through the file property (Mendix's file upload API; commit the
+    object in After Save Action);
+
+-   Translatable Save and Download captions;
 
 -   Export settings fully customizable;
 
@@ -83,14 +88,17 @@ data directly from your Mendix web app. Current features include:
 -   ⚠️ Styling limitations: conditional formatting, rich text inside a cell, pattern and gradient fills (shown as a
     solid colour), diagonal borders and theme colours (saved as RGB) aren't supported.
 
--   ⚠️ Chart limitations: charts are view-only (drag, resize and chart editing aren't available), data labels,
-    trendlines and secondary axes aren't drawn, and 3D charts are drawn flat. Charts stay where they were anchored when
-    rows or columns are inserted above them. Downloading in formats other than .xlsx/.xlsm drops charts.
+-   ⚠️ Chart limitations: charts are view-only (drag, resize and chart editing aren't available), 3D charts are drawn
+    flat, and trendlines other than linear and moving average are drawn as their linear fit. Chart data ranges don't
+    move when rows are inserted inside them. Downloading in formats other than .xlsx/.xlsm drops charts.
 
 -   ⚠️ The toolbar's percent, date and time formats only change how a value is shown (x-spreadsheet adds text around
     it), so they aren't saved as Excel number formats. Number and currency formats are.
 
--   ⚠️ Formulas that x-spreadsheet can't calculate the way Excel does (e.g. VLOOKUP, ROUND, or a division whose result
-    differs from Excel's) keep showing the value Excel saved until the file is opened in Excel again.
+-   ⚠️ Formulas with functions the engine doesn't support keep showing the value Excel saved, also after edits.
+
+-   ⚠️ Fonts that aren't installed on the viewer's computer are drawn with the closest installed font (for example Aptos
+    Narrow as Arial Narrow), so text can be slightly wider or narrower than in Excel. Styles are saved for .xlsx and
+    .xlsm; other formats get values only.
 
 -   🙌 Feel free to suggest us new features or report bugs.

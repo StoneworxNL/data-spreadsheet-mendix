@@ -518,9 +518,10 @@ function readSheetDrawing(pkg, sheetXml, sheetPath, theme) {
     const drawingRels = readRels(pkg, rel.path);
 
     const objects = [];
-    Array.from(xml.documentElement.children).forEach(anchor => {
+    Array.from(xml.documentElement.children).forEach((anchor, anchorIndex) => {
         const position = readAnchor(anchor);
         if (!position) return;
+        position.index = anchorIndex;
 
         const chartRef = descendants(anchor, "chart")[0];
         if (chartRef) {
@@ -616,6 +617,13 @@ export function readChart(xml, theme) {
     const plotArea = chartEl && children(chartEl, "plotArea")[0];
     if (!plotArea) return null;
 
+    // Value axes on the right are secondary axes
+    const secondaryAxes = new Set(
+        children(plotArea, "valAx")
+            .filter(ax => (children(ax, "axPos")[0] || { getAttribute: () => "l" }).getAttribute("val") === "r")
+            .map(ax => (children(ax, "axId")[0] || { getAttribute: () => "" }).getAttribute("val"))
+    );
+
     const plots = [];
     Array.from(plotArea.children).forEach(plotEl => {
         const type = PLOT_TYPES[plotEl.localName];
@@ -631,6 +639,8 @@ export function readChart(xml, theme) {
             varyColors: val("varyColors") === "1",
             scatterStyle: val("scatterStyle"),
             holeSize: Number(val("holeSize")) || 50,
+            secondary: children(plotEl, "axId").some(ax => secondaryAxes.has(ax.getAttribute("val"))),
+            labels: readLabels(children(plotEl, "dLbls")[0]),
             series: children(plotEl, "ser").map(ser => readSeries(ser, theme))
         });
     });
@@ -684,8 +694,31 @@ function readSeries(ser, theme) {
         noLine: Boolean(spPr && descendants(spPr, "ln").some(ln => children(ln, "noFill").length)),
         noMarker: Boolean(markerSymbol && markerSymbol.getAttribute("val") === "none"),
         smooth: Boolean(children(ser, "smooth")[0] && children(ser, "smooth")[0].getAttribute("val") === "1"),
-        pointColors: points
+        pointColors: points,
+        labels: readLabels(children(ser, "dLbls")[0]),
+        trendlines: children(ser, "trendline").map(trendline => {
+            const type = children(trendline, "trendlineType")[0];
+            const period = children(trendline, "period")[0];
+            return {
+                type: type ? type.getAttribute("val") : "linear",
+                period: period ? Number(period.getAttribute("val")) || 2 : 2,
+                color: lineColor(children(trendline, "spPr")[0], theme)
+            };
+        })
     };
+}
+
+// Data labels: which parts are shown (null when the element is missing, so the plot's setting applies)
+function readLabels(dLbls) {
+    if (!dLbls) return null;
+    const on = name => {
+        const el = children(dLbls, name)[0];
+        return Boolean(el) && el.getAttribute("val") === "1";
+    };
+    if (children(dLbls, "delete")[0] && children(dLbls, "delete")[0].getAttribute("val") === "1") {
+        return { value: false, percent: false, category: false };
+    }
+    return { value: on("showVal"), percent: on("showPercent"), category: on("showCatName") };
 }
 
 function fillColor(spPr, theme) {

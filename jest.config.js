@@ -7,6 +7,8 @@ const testConfig = join(__dirname, "node_modules/@mendix/pluggable-widgets-tools
 // a cache folder with strict permissions. Babel (the tools' own transform) doesn't have that problem.
 module.exports = {
     ...base,
+    // x-data-spreadsheet is published as ES module source
+    transformIgnorePatterns: ["node_modules/(?!x-data-spreadsheet/)"],
     transform: {
         "^.+\\.(t|j)sx?$": join(testConfig, "transform.js"),
         "^.+\\.svg$": join(testConfig, "jest-svg-transformer")
