@@ -45,6 +45,33 @@ data directly from your Mendix web app. Current features include:
 -   Customize css: the widget's root has the class `xspreadsheet-widget` (plus your own class), and the grid sits in
     `.xs-grid`. The old `#gridctr` id still works but isn't unique when a page has several spreadsheets.
 
+## Screenshots
+
+Taken from the [demo app](https://x-spreadsheet-demo-sandbox.mxapps.io/index.html).
+
+**Styling and charts.** A read-only sales report with merged headers, number formats, frozen rows, and the workbook's
+column and pie charts placed where Excel put them.
+
+<img alt="Sales report with Excel styling, a column chart and a pie chart" src="images/screenshots/styling-and-charts.png" width="800"/>
+
+**Live charts.** The same report in edit mode. Change a quarter and the SUM totals, shares and charts update as you
+type.
+
+<img alt="Editable sales report with the toolbar and charts" src="images/screenshots/live-charts.png" width="800"/>
+
+**Cell formatting.** Fonts, fills, borders, wrapped text, strikethrough, a hidden column and a bar chart, all read from
+the file.
+
+<img alt="Project plan with coloured status cells, wrapped notes and a bar chart" src="images/screenshots/cell-formatting.png" width="800"/>
+
+**Edit and save.** A contact list with Save and Download buttons. Save writes the changes back to the file document.
+
+<img alt="Editable contact list with Save and Download buttons" src="images/screenshots/edit-and-save.png" width="800"/>
+
+**Wide sheets.** A sensor log with many columns and a frozen first column and header row.
+
+<img alt="Wide sensor log with a frozen timestamp column" src="images/screenshots/wide-sheets.png" width="800"/>
+
 ## Usage
 
 1. Add a dataview that fetches the .xlsx file you wish to display/edit.
