@@ -52,25 +52,25 @@ Taken from the [demo app](https://x-spreadsheet-demo-sandbox.mxapps.io/index.htm
 **Styling and charts.** A read-only sales report with merged headers, number formats, frozen rows, and the workbook's
 column and pie charts placed where Excel put them.
 
-<img alt="Sales report with Excel styling, a column chart and a pie chart" src="images/screenshots/styling-and-charts.png" width="800"/>
+<img alt="Sales report with Excel styling, a column chart and a pie chart" src="images/screenshots/styling-and-charts.png" width="900"/>
 
 **Live charts.** The same report in edit mode. Change a quarter and the SUM totals, shares and charts update as you
 type.
 
-<img alt="Editable sales report with the toolbar and charts" src="images/screenshots/live-charts.png" width="800"/>
+<img alt="Editable sales report with the toolbar and charts" src="images/screenshots/live-charts.png" width="900"/>
 
 **Cell formatting.** Fonts, fills, borders, wrapped text, strikethrough, a hidden column and a bar chart, all read from
 the file.
 
-<img alt="Project plan with coloured status cells, wrapped notes and a bar chart" src="images/screenshots/cell-formatting.png" width="800"/>
+<img alt="Project plan with coloured status cells, wrapped notes and a bar chart" src="images/screenshots/cell-formatting.png" width="900"/>
 
 **Edit and save.** A contact list with Save and Download buttons. Save writes the changes back to the file document.
 
-<img alt="Editable contact list with Save and Download buttons" src="images/screenshots/edit-and-save.png" width="800"/>
+<img alt="Editable contact list with Save and Download buttons" src="images/screenshots/edit-and-save.png" width="900"/>
 
 **Wide sheets.** A sensor log with many columns and a frozen first column and header row.
 
-<img alt="Wide sensor log with a frozen timestamp column" src="images/screenshots/wide-sheets.png" width="800"/>
+<img alt="Wide sensor log with a frozen timestamp column" src="images/screenshots/wide-sheets.png" width="900"/>
 
 ## Usage
 
