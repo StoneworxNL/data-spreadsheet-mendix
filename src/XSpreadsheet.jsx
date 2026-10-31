@@ -12,7 +12,13 @@ export function XSpreadsheet({
     isShowSave,
     isShowDownload,
     afterSaveAction,
-    widthOffset
+    saveMethod,
+    widthOffset,
+    height,
+    saveCaption,
+    downloadCaption,
+    class: className,
+    style
 }) {
     return (
         <MendixSpreadsheet
@@ -26,7 +32,13 @@ export function XSpreadsheet({
             isShowSave={isShowSave}
             isShowDownload={isShowDownload}
             afterSaveAction={afterSaveAction}
+            saveMethod={saveMethod}
             widthOffset={widthOffset}
+            height={height}
+            saveCaption={saveCaption && saveCaption.value}
+            downloadCaption={downloadCaption && downloadCaption.value}
+            className={className}
+            style={style}
         />
     );
 }
