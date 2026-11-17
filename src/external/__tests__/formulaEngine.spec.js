@@ -77,6 +77,37 @@ describe("FormulaEngine", () => {
         );
     });
 
+    it("caps REPT at Excel's 32,767 characters", () => {
+        const sheets = [{ name: "S", rows: { len: 1 }, cols: { len: 1 } }];
+        const engine = new FormulaEngine(() => sheets, getCell);
+        expect(engine.evaluate(sheets[0], 0, 0, '=REPT("ab",3)').value).toBe("ababab");
+        const started = Date.now();
+        expect(engine.evaluate(sheets[0], 0, 1, '=REPT("a",1000000000)').error).toBe("#VALUE!");
+        expect(Date.now() - started).toBeLessThan(1000);
+        expect(engine.evaluate(sheets[0], 0, 2, '=REPT("a",-1)').error).toBe("#VALUE!");
+    });
+
+    it("calculates chains of formulas far longer than the nesting limit", () => {
+        // A running total down 1,000 rows: A1 = 1, An = A(n-1) + 1
+        const rows = { len: 1000, 0: { cells: { 0: { text: "1" } } } };
+        for (let r = 1; r < 1000; r++) rows[r] = { cells: { 0: { text: `=A${r}+1` } } };
+        const sheets = [{ name: "S", rows, cols: { len: 1 } }];
+        const engine = new FormulaEngine(() => sheets, getCell);
+        expect(engine.cellValue(sheets[0], 999, 0)).toBe(1000);
+
+        rows[0].cells[0].text = "101";
+        engine.reset();
+        expect(engine.cellValue(sheets[0], 999, 0)).toBe(1100);
+    });
+
+    it("still reports a circular reference inside a long chain", () => {
+        const rows = { len: 300, 0: { cells: { 0: { text: "=A300" } } } };
+        for (let r = 1; r < 300; r++) rows[r] = { cells: { 0: { text: `=A${r}+1` } } };
+        const sheets = [{ name: "S", rows, cols: { len: 1 } }];
+        const engine = new FormulaEngine(() => sheets, getCell);
+        expect(engine.evaluate(sheets[0], 299, 0, "=A299+1").error).toBeDefined();
+    });
+
     it("keeps Excel's value for formulas it can't reproduce", () => {
         const sheets = loadSheets();
         const engine = new FormulaEngine(() => sheets, getCell);

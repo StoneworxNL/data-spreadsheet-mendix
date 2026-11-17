@@ -3,6 +3,8 @@ node_modules/
 
 # Build output; release packages are attached to GitHub releases
 dist/tmp/
+# Release packages go on GitHub releases (older versions were committed before this rule)
+dist/*/*.mpk
 dist/coverage/
 *.log
 

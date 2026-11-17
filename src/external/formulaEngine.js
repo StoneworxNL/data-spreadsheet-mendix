@@ -7,9 +7,33 @@ import FormulaParser from "fast-formula-parser";
  *
  * Loaded formulas are checked once against the result Excel saved: ones the parser calculates differently, or can't
  * calculate, keep showing Excel's value (see `isTrusted`).
+ *
+ * Always use the parser's synchronous `parse()`, never `parseAsync()`: in sync mode WEBSERVICE (and any other async
+ * function) throws instead of making a request, so a formula in an uploaded file can't reach the network.
+ *
+ * Long chains (e.g. a running total down 10,000 rows) are calculated in steps of MAX_DEPTH nested formulas, so the
+ * call stack stays small (see `evaluate`).
  */
 
+// Nested formulas calculated in one go; deeper chains are calculated from the bottom up in more steps
 const MAX_DEPTH = 100;
+// Steps per calculation: chains up to MAX_DEPTH × MAX_STEPS formulas long
+const MAX_STEPS = 2000;
+// Excel's longest text in a cell
+const MAX_TEXT = 32767;
+const { FormulaError, FormulaHelpers, Types } = FormulaParser;
+
+// Functions replaced to keep a crafted file from freezing the tab
+const SAFE_FUNCTIONS = {
+    // fast-formula-parser loops `times` times with no limit; =REPT("a",1000000000) would hang. Excel gives #VALUE! past
+    // 32,767 characters.
+    REPT: (text, times) => {
+        const value = FormulaHelpers.accept(text, Types.STRING);
+        const count = Math.trunc(FormulaHelpers.accept(times, Types.NUMBER));
+        if (count < 0 || value.length * count > MAX_TEXT) throw FormulaError.VALUE;
+        return value.repeat(count);
+    }
+};
 const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 
 export class FormulaEngine {
@@ -30,6 +54,7 @@ export class FormulaEngine {
     parserAt(depth) {
         if (!this.parsers[depth]) {
             this.parsers[depth] = new FormulaParser({
+                functions: SAFE_FUNCTIONS,
                 onCell: ({ sheet, row, col }) => this.valueAt(sheet, row - 1, col - 1),
                 onRange: ({ sheet, from, to }) => {
                     const rows = [];
@@ -62,7 +87,7 @@ export class FormulaEngine {
         return this.verifier;
     }
 
-    /** Forget cached results; call when cells change (the grid does this before each draw). */
+    /** Forget cached results; call when cells change (renderPatches does this on every cell change). */
     reset() {
         this.cache.clear();
     }
@@ -100,12 +125,35 @@ export class FormulaEngine {
 
     /**
      * Calculates a formula in a cell.
+     *
+     * A formula that reads another formula calculates it from inside the parser, so a long chain nests deeply. Past
+     * MAX_DEPTH levels the cell at the limit is noted in `tooDeep` and nothing from that attempt is cached; it is then
+     * calculated on its own first, and the attempt repeated with its result cached.
      * @returns {{ value?: any, error?: string, unsupported?: boolean }}
      */
     evaluate(data, ri, ci, formula) {
+        if (this.evaluating.size > 0) return this.evaluateCell(data, ri, ci, formula);
+        const pending = [[data, ri, ci, formula]];
+        let result;
+        for (let step = 0; pending.length && step < MAX_STEPS; step++) {
+            this.tooDeep = null;
+            result = this.evaluateCell(...pending[pending.length - 1]);
+            if (this.tooDeep) pending.push(this.tooDeep);
+            else pending.pop();
+        }
+        this.tooDeep = null;
+        // Longer than MAX_DEPTH × MAX_STEPS: give up like a circular reference
+        return pending.length ? { error: "#REF!" } : result;
+    }
+
+    evaluateCell(data, ri, ci, formula) {
         const key = `${data.name}!${ri}:${ci}`;
         if (this.cache.has(key)) return this.cache.get(key);
-        if (this.evaluating.has(key) || this.evaluating.size > MAX_DEPTH) return { error: "#REF!" };
+        if (this.evaluating.has(key)) return { error: "#REF!" };
+        if (this.evaluating.size > MAX_DEPTH) {
+            if (!this.tooDeep) this.tooDeep = [data, ri, ci, formula];
+            return { error: "#REF!" };
+        }
         const parser = this.parserAt(this.evaluating.size);
         this.evaluating.add(key);
         let result;
@@ -117,7 +165,8 @@ export class FormulaEngine {
         } finally {
             this.evaluating.delete(key);
         }
-        this.cache.set(key, result);
+        // A result that used a cell past the depth limit is incomplete
+        if (!this.tooDeep) this.cache.set(key, result);
         return result;
     }
 

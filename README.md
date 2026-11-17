@@ -95,6 +95,10 @@ the file.
     roles that may change the file.
 -   Files are parsed in the browser and treated as untrusted: font names must be plain names, pictures are only shown
     when they are raster images (PNG, JPEG, GIF, BMP, WebP), and files above 20 MB aren't opened.
+-   The 20 MB limit is on the file as stored, which is compressed: a crafted .xlsx can unpack to far more, and the whole
+    file is unpacked in the browser. If users can upload files from outside, also limit the upload size in your app.
+-   Formulas are calculated in the browser without network access (WEBSERVICE and similar functions give an error), and
+    `REPT` is capped at Excel's 32,767 characters.
 
 ## Demo project
 
@@ -112,8 +116,9 @@ the file.
     this widget's logic as per this
     [Stack Overflow post](https://superuser.com/questions/1720362/firefox-scroll-bar-disappearing).
 
--   ⚠️ Styling limitations: conditional formatting, rich text inside a cell, pattern and gradient fills (shown as a
-    solid colour), diagonal borders and theme colours (saved as RGB) aren't supported.
+-   ⚠️ Styling limitations: conditional formatting, named cell styles, rich text inside a cell, pattern and gradient
+    fills (shown as a solid colour), diagonal borders and theme colours (saved as RGB) aren't supported. Named cell
+    styles and differential formats from the loaded file are dropped on save; the cells keep their own formatting.
 
 -   ⚠️ Chart limitations: charts are view-only (drag, resize and chart editing aren't available), 3D charts are drawn
     flat, and trendlines other than linear and moving average are drawn as their linear fit. Chart data ranges don't

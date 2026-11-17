@@ -9,6 +9,14 @@
  *
  * Text overflow: like Excel, left-aligned text that doesn't wrap runs on into empty cells to its right instead of
  * being cut off at its own cell border.
+ *
+ * Formula results are cached until a cell changes: every way x-spreadsheet changes cells (typing, paste, delete,
+ * insert, undo/redo) goes through DataProxy's changeData, setCellText or setData, and those clear the cache. Adding,
+ * removing or renaming a sheet clears it on the next draw.
+ *
+ * Cell editor: x-spreadsheet copies the edited cell's text into a hidden measuring div with innerHTML, so a cell
+ * value such as `<img src=x onerror=...>` from an uploaded file would run as script for whoever edits it. That div
+ * gets the text as plain text instead (see `patchEditor`).
  */
 import * as XLSX from "xlsx";
 import { FormulaEngine } from "./formulaEngine.js";
@@ -16,6 +24,8 @@ import { FormulaEngine } from "./formulaEngine.js";
 const PATCHED = "__xsRenderPatches";
 const ENGINE = "__xsFormulaEngine";
 const MAX_OVERFLOW_COLUMNS = 20;
+// DataProxy methods that change cells; each clears the formula cache
+const CHANGES_CELLS = ["changeData", "setCellText", "setData"];
 
 /**
  * @param {Object} spreadsheet The x-spreadsheet instance
@@ -51,6 +61,18 @@ export function installRenderPatches(spreadsheet) {
                 return rect;
             }
         });
+        CHANGES_CELLS.forEach(name => {
+            const original = proto[name];
+            Object.assign(proto, {
+                [name](...args) {
+                    try {
+                        return original.apply(this, args);
+                    } finally {
+                        if (this[ENGINE]) this[ENGINE].reset();
+                    }
+                }
+            });
+        });
         proto[PATCHED] = true;
     }
 
@@ -60,12 +82,19 @@ export function installRenderPatches(spreadsheet) {
         (data, ri, ci) => storedCell.call(data, ri, ci)
     );
 
+    patchEditor(spreadsheet.sheet.editor);
+
     const { table } = spreadsheet.sheet;
     const render = table.render;
+    let sheetNames = null;
     table.render = (...args) => {
         const { data } = table;
-        // Cells may have changed since the last draw
-        engine.reset();
+        // Formulas can refer to sheets by name, and results are cached per sheet name
+        const names = spreadsheet.datas.map(d => d.name).join("\n");
+        if (names !== sheetNames) {
+            sheetNames = names;
+            engine.reset();
+        }
         spreadsheet.datas.forEach(d => {
             d[ENGINE] = engine;
         });
@@ -82,6 +111,22 @@ export function installRenderPatches(spreadsheet) {
             table.render = render;
         }
     };
+}
+
+/**
+ * The editor's measuring div (`textlineEl`) only needs the text's size, but x-spreadsheet fills it with `.html()`,
+ * i.e. innerHTML. Give it the text as plain text, so cell values are never parsed as HTML.
+ */
+export function patchEditor(editor) {
+    const line = editor && editor.textlineEl;
+    if (!line || !line.el) return;
+    Object.assign(line, {
+        html(content) {
+            if (content === undefined) return this.el.textContent;
+            this.el.textContent = content == null ? "" : String(content);
+            return this;
+        }
+    });
 }
 
 function isUnedited(cell) {

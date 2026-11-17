@@ -3,7 +3,7 @@
     "widgetName": "XSpreadsheet",
     "version": "2.0.0",
     "description": "A web-based JavaScript spreadsheet (https://github.com/myliang/x-spreadsheet).",
-    "copyright": "© Stoneworx 2026. All rights reserved.",
+    "copyright": "© Stoneworx 2026",
     "author": "Stoneworx",
     "engines": {
         "node": ">=22.20.0"
