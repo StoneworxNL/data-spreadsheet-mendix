@@ -134,22 +134,44 @@ export class FormulaEngine {
     evaluate(data, ri, ci, formula) {
         if (this.evaluating.size > 0) return this.evaluateCell(data, ri, ci, formula);
         const pending = [[data, ri, ci, formula]];
+        // Each pending cell needs the one after it; reaching one below the top means the chain loops back
+        this.pendingKeys = new Set();
+        this.circular = false;
         let result;
-        for (let step = 0; pending.length && step < MAX_STEPS; step++) {
+        try {
+            for (let step = 0; pending.length && !this.circular && step < MAX_STEPS; step++) {
+                this.tooDeep = null;
+                result = this.evaluateCell(...pending[pending.length - 1]);
+                if (this.circular) break;
+                if (this.tooDeep) {
+                    this.pendingKeys.add(cellKey(...pending[pending.length - 1]));
+                    pending.push(this.tooDeep);
+                } else {
+                    pending.pop();
+                    if (pending.length) this.pendingKeys.delete(cellKey(...pending[pending.length - 1]));
+                }
+            }
+            if (!pending.length) return result;
+            // A loop, or longer than MAX_DEPTH × MAX_STEPS: like a circular reference. Kept until the next reset, so
+            // the next draw doesn't calculate the whole chain again.
+            const error = { error: "#REF!" };
+            pending.forEach(cell => this.cache.set(cellKey(...cell), error));
+            return error;
+        } finally {
             this.tooDeep = null;
-            result = this.evaluateCell(...pending[pending.length - 1]);
-            if (this.tooDeep) pending.push(this.tooDeep);
-            else pending.pop();
+            this.circular = false;
+            this.pendingKeys = null;
         }
-        this.tooDeep = null;
-        // Longer than MAX_DEPTH × MAX_STEPS: give up like a circular reference
-        return pending.length ? { error: "#REF!" } : result;
     }
 
     evaluateCell(data, ri, ci, formula) {
-        const key = `${data.name}!${ri}:${ci}`;
+        const key = cellKey(data, ri, ci);
         if (this.cache.has(key)) return this.cache.get(key);
         if (this.evaluating.has(key)) return { error: "#REF!" };
+        if (this.pendingKeys && this.pendingKeys.has(key)) {
+            this.circular = true;
+            return { error: "#REF!" };
+        }
         if (this.evaluating.size > MAX_DEPTH) {
             if (!this.tooDeep) this.tooDeep = [data, ri, ci, formula];
             return { error: "#REF!" };
@@ -165,8 +187,8 @@ export class FormulaEngine {
         } finally {
             this.evaluating.delete(key);
         }
-        // A result that used a cell past the depth limit is incomplete
-        if (!this.tooDeep) this.cache.set(key, result);
+        // A result that used a cell past the depth limit, or a loop, is incomplete
+        if (!this.tooDeep && !this.circular) this.cache.set(key, result);
         return result;
     }
 
@@ -185,6 +207,10 @@ export class FormulaEngine {
         }
         return source.trusted;
     }
+}
+
+function cellKey(data, ri, ci) {
+    return `${data.name}!${ri}:${ci}`;
 }
 
 function fromSaved(cell) {

@@ -23,7 +23,7 @@ Requires Mendix 11 (Pluggable Widgets Tools 11, React 19).
 -   Save keeps the format of the loaded file; Book Type applies to Download.
 -   Loaded formulas show Excel's result; simple formulas recalculate after edits. Results are cached until a cell
     changes, so scrolling doesn't recalculate, and long chains of formulas (e.g. a running total down thousands of rows)
-    are calculated instead of showing #REF!.
+    are calculated instead of showing #REF!. A loop in such a chain shows #REF! straight away.
 -   The widget reloads when the file or Editable changes and cleans up its listeners.
 -   `xlsx` 0.20.3 (fixes GHSA-4r6h-8v6p-xvw6 and GHSA-5pgg-2g8v-p4x9).
 -   The Type export option is deprecated.

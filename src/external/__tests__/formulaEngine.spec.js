@@ -100,12 +100,28 @@ describe("FormulaEngine", () => {
         expect(engine.cellValue(sheets[0], 999, 0)).toBe(1100);
     });
 
-    it("still reports a circular reference inside a long chain", () => {
-        const rows = { len: 300, 0: { cells: { 0: { text: "=A300" } } } };
-        for (let r = 1; r < 300; r++) rows[r] = { cells: { 0: { text: `=A${r}+1` } } };
+    it("reports a circular reference inside a long chain quickly, and keeps it until a cell changes", () => {
+        // A running total down 150 rows whose first cell points back at the last
+        const rows = { len: 150, 0: { cells: { 0: { text: "=A150" } } } };
+        for (let r = 1; r < 150; r++) rows[r] = { cells: { 0: { text: `=A${r}+1` } } };
         const sheets = [{ name: "S", rows, cols: { len: 1 } }];
         const engine = new FormulaEngine(() => sheets, getCell);
-        expect(engine.evaluate(sheets[0], 299, 0, "=A299+1").error).toBeDefined();
+
+        const started = Date.now();
+        expect(engine.evaluate(sheets[0], 149, 0, "=A149+1").error).toBe("#REF!");
+        // Every cell of the loop, as a draw would ask for them
+        for (let r = 0; r < 150; r++) expect(engine.cellValue(sheets[0], r, 0)).toMatch(/^#/);
+        expect(Date.now() - started).toBeLessThan(1000);
+
+        // The next draw gets it from the cache
+        const parse = jest.spyOn(engine, "parserAt");
+        expect(engine.evaluate(sheets[0], 149, 0, "=A149+1").error).toBe("#REF!");
+        expect(parse).not.toHaveBeenCalled();
+
+        // Breaking the loop calculates the chain again
+        rows[0].cells[0].text = "1";
+        engine.reset();
+        expect(engine.cellValue(sheets[0], 149, 0)).toBe(150);
     });
 
     it("keeps Excel's value for formulas it can't reproduce", () => {
