@@ -167,6 +167,9 @@ export class FormulaEngine {
     evaluateCell(data, ri, ci, formula) {
         const key = cellKey(data, ri, ci);
         if (this.cache.has(key)) return this.cache.get(key);
+        // This step is retried once the deeper cell is calculated, so don't explore other branches meanwhile: nothing
+        // is cached until then, and a cell reading two earlier formulas would double the work at every level
+        if (this.tooDeep || this.circular) return { error: "#REF!" };
         if (this.evaluating.has(key)) return { error: "#REF!" };
         if (this.pendingKeys && this.pendingKeys.has(key)) {
             this.circular = true;

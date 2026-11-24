@@ -3,6 +3,7 @@ import { join } from "path";
 import * as XLSX from "xlsx";
 import { stox } from "../xlsxspread";
 import { FormulaEngine } from "../formulaEngine";
+import FormulaParser from "fast-formula-parser";
 
 // Grid sheets as x-spreadsheet keeps them, with the row/column counts the engine reads
 function loadSheets() {
@@ -98,6 +99,25 @@ describe("FormulaEngine", () => {
         rows[0].cells[0].text = "101";
         engine.reset();
         expect(engine.cellValue(sheets[0], 999, 0)).toBe(1100);
+    });
+
+    it("calculates long chains where each cell reads two earlier formulas in linear time", () => {
+        // A rolling average over a formula column: A(n) = AVERAGE(A(n-2):A(n-1)) + 1, down 1,000 rows
+        const rows = { len: 1000, 0: { cells: { 0: { text: "1" } } }, 1: { cells: { 0: { text: "=A1+1" } } } };
+        for (let r = 2; r < 1000; r++) rows[r] = { cells: { 0: { text: `=AVERAGE(A${r - 1}:A${r})+1` } } };
+        const sheets = [{ name: "S", rows, cols: { len: 1 } }];
+        const engine = new FormulaEngine(() => sheets, getCell);
+
+        // Counted rather than timed, so slower machines don't fail it: without stopping a step that went too deep, the
+        // work doubled per row and 1,000 rows never finished
+        const parse = jest.spyOn(FormulaParser.prototype, "parse");
+        const value = engine.cellValue(sheets[0], 999, 0);
+        expect(parse.mock.calls.length).toBeLessThan(3 * 1000);
+        parse.mockRestore();
+        // Same chain calculated row by row
+        const expected = [1, 2];
+        for (let r = 2; r < 1000; r++) expected.push((expected[r - 2] + expected[r - 1]) / 2 + 1);
+        expect(value).toBeCloseTo(expected[999], 6);
     });
 
     it("reports a circular reference inside a long chain quickly, and keeps it until a cell changes", () => {
