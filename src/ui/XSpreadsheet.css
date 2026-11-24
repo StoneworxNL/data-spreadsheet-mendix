@@ -1,6 +1,32 @@
-#gridctr.readonly .x-spreadsheet .x-spreadsheet-bottombar .x-spreadsheet-contextmenu,
-#gridctr.readonly .x-spreadsheet .x-spreadsheet-bottombar ul > li:first-child > div:first-child {
+.xs-grid.readonly .x-spreadsheet .x-spreadsheet-bottombar .x-spreadsheet-contextmenu,
+.xs-grid.readonly .x-spreadsheet .x-spreadsheet-bottombar ul > li:first-child > div:first-child {
     cursor: default;
     display: none;
     visibility: hidden;
+}
+
+/* Charts and pictures from the workbook, drawn over the grid (above the selection, below the scrollbars) */
+.x-spreadsheet .xs-drawing-layer {
+    position: absolute;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 11;
+}
+
+.x-spreadsheet .xs-drawing {
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: auto;
+}
+
+.x-spreadsheet .xs-drawing-chart {
+    padding: 6px;
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+}
+
+.x-spreadsheet .xs-drawing-picture img {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
